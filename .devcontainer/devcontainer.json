@@ -29,7 +29,8 @@
 	"customizations": {
 		"vscode": {
 			"extensions": [
-				"golang.Go"
+				"golang.Go",
+				"davidanson.vscode-markdownlint"
 			]
 		}
 	},
