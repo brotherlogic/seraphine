@@ -1,32 +1,17 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the
-// README at: https://github.com/devcontainers/templates/tree/main/src/go
+// README at: https://github.com/devcontainers/templates/tree/main/src/ubuntu
 {
-	"name": "Go & Ubuntu (Seraphine)",
-	"build": {
-		"dockerfile": "Dockerfile"
-	},
-
-	// Features to add to the dev container. More info: https://containers.dev/features.
+	"name": "Beerkellar",
+	"image": "mcr.microsoft.com/devcontainers/base:noble",
 	"features": {
-		"ghcr.io/devcontainers/features/go:1": {
-			"version": "latest"
-		},
-		"ghcr.io/devcontainers/features/common-utils:1": {
-			"installZsh": true,
-			"configureZshAsDefaultShell": true,
-			"installOhMyZsh": true,
-			"upgradePackages": true
-		}
+		"ghcr.io/devcontainers/features/go:1": {},
+		"ghcr.io/nils-geistmann/devcontainers-features/zsh:0": {},
+		"ghcr.io/devcontainers/features/github-cli:1": {},
+		"ghcr.io/siri404/devcontainer-ai-features/gemini-cli:1": {},
+		"ghcr.io/devcontainers/features/common-utils": "2",
+		"ghcr.io/devcontainers-extra/features/protoc:1": {}
 	},
-
-	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	// "forwardPorts": [8080],
-
-	// Use 'postCreateCommand' to run commands after the container is created.
-	// "postCreateCommand": "go version",
-
-	// Configure tool-specific properties.
-	"customizations": {
+    	"customizations": {
 		"vscode": {
 			"extensions": [
 				"golang.Go",
@@ -34,7 +19,23 @@
 			]
 		}
 	},
-
-	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
-	"remoteUser": "vscode"
+	"postCreateCommand": "./postCreate.sh",
+	"workspaceFolder": "/workspaces/seraphine",
+	"workingDir": "/workspaces/seraphine",
+	"initializeCommand": "echo \"GH_TOKEN=$(gh auth token)\" > .devcontainer/.env.auth",
+	"runArgs": [
+		"--security-opt",
+		"label=disable"
+	],
+	"containerEnv": {
+		"GH_GIT_PROTOCOL": "ssh"
+	},
+	"mounts": [
+		{
+			"source": "${localEnv:HOME}/.agent-ssh",
+			"target": "/home/vscode/.ssh", 
+			"type": "bind",
+			"options": "readonly" 
+		}
+	]
 }
