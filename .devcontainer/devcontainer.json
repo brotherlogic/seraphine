@@ -32,7 +32,7 @@
 	},
 	"mounts": [
 		{
-			"source": "${localEnv:HOME}/.agent-ssh",
+			"source": "${localEnv:HOME}/.ssh",
 			"target": "/home/vscode/.ssh", 
 			"type": "bind",
 			"options": "readonly" 
