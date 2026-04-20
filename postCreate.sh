@@ -13,3 +13,7 @@ tic -x ghostty.terminfo
 
 # Install tmux and emacs
 sudo apt-get update && sudo apt-get install -y tmux emacs
+
+# Set git identity
+git config --global user.email "brotherlogicautomation@gmail.com"
+git config --global user.name "Brotherlogic Automation"
