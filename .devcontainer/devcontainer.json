@@ -36,7 +36,7 @@
 			"target": "/home/vscode/.ssh", 
 			"type": "bind",
 			"options": "readonly" 
-		}
+		},
 	    		"source=${localEnv:HOME}/.gemini,target=/home/vscode/.gemini,type=bind"
 	]
 }
