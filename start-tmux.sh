@@ -3,6 +3,7 @@
 # Ensure the 'prod' session exists
 if ! tmux has-session -t prod 2>/dev/null; then
   # Create a new session named 'prod', detached
+  cd /workspaces/seraphine
   tmux new-session -d -s prod
   
   # Split the window horizontally (-h)
