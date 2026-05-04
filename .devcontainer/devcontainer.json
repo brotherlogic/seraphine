@@ -28,7 +28,8 @@
 		"label=disable"
 	],
 	"containerEnv": {
-		"GH_GIT_PROTOCOL": "ssh"
+		"GH_GIT_PROTOCOL": "ssh",
+		"TZ": "America/Los_Angeles"
 	},
 	"mounts": [
 		{

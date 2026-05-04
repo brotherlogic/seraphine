@@ -20,6 +20,7 @@ git config --global user.name "Brotherlogic Automation"
 
 TMUX_BLOCK=$(cat << 'EOF'
 if [ -z "$TMUX" ] && [ -n "$PS1" ]; then
+  cd /workspaces/seraphine
   /workspaces/seraphine/start-tmux.sh && tmux attach-session -t prod
 fi
 EOF
