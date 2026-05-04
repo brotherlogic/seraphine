@@ -12,8 +12,32 @@ To init a project we run:
 
 seraphine init
 
-in the project root. This adds .seraphine directory to the project and gives seraphine the necessary permissions to push changes and manage issues etc.
+in the project root. This adds .seraphine directory to the project and gives seraphine the necessary permissions to push changes and manage issues etc. It also installs the necessary tools and skills in the devcontainer for the project.
 
 ## Feature planning
 
-To build out a new feature we either create an issue with a broadly defined statement.
+To build out a new feature we either create an issue with a broadly defined statement or label an existing feature request under 'seraphine-feature'.
+
+We can then ask seraphine which feature we should be working on - it'll give you the project and issue number:
+
+seraphine feature
+
+If available, it'll then call the devcontainer router for that project, and initiate the interview process to take the broadly defined feature and work it into something more usable. Ultimately after this process, the seraphine-feature tag will be removed and the we'll add the 'seraphine-implement' tag
+
+## Implementation Planning
+
+We ask seraphine to build an implementation plan for the feature:
+
+$ seraphine implement
+
+It will then take the requirements from the issue, and break it down into implementation steps, potentially creating sub-issues for each piece of work. Each of these subissues will be tagged with the seraphine-code tag.
+
+## Coding
+
+Each of the code tagged issues are now ready for actual coding. The breadcrumb trail of proposal plan and issue specifics can guide the agent when coding. We use standard TDD approaches to address each piece.We also request the agent to focus on the revewability of the code rather than trying to  create a large single change. A number of agentic reviews are undertaken when coding the piece, but eventually pull requests are created, and assigned to the project owner for review.
+
+## Review
+
+You can then run seraphine-review and work through any available reviews. You can either comment, and have the agent address those comments, or approve and have the code be merged.
+
+Note that each of these steps can be run through either (a) your subscription, (b) Model API Keys or (c) local agents - this is configured in your seraphine config for the project.
