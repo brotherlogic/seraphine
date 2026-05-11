@@ -25,7 +25,10 @@
 	"initializeCommand": "echo \"GH_TOKEN=$(gh auth token)\" > .devcontainer/.env.auth",
 	"runArgs": [
 		"--security-opt",
-		"label=disable"
+	    "label=disable",
+	    "--env-file",
+		"${localWorkspaceFolder}/.devcontainer/.env.auth"
+	    
 	],
 	"containerEnv": {
 		"GH_GIT_PROTOCOL": "ssh",
