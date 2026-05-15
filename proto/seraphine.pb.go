@@ -21,6 +21,102 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type RegisterProjectRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ProjectName   string                 `protobuf:"bytes,1,opt,name=project_name,json=projectName,proto3" json:"project_name,omitempty"`
+	RepositoryUrl string                 `protobuf:"bytes,2,opt,name=repository_url,json=repositoryUrl,proto3" json:"repository_url,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RegisterProjectRequest) Reset() {
+	*x = RegisterProjectRequest{}
+	mi := &file_proto_seraphine_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RegisterProjectRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RegisterProjectRequest) ProtoMessage() {}
+
+func (x *RegisterProjectRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_seraphine_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RegisterProjectRequest.ProtoReflect.Descriptor instead.
+func (*RegisterProjectRequest) Descriptor() ([]byte, []int) {
+	return file_proto_seraphine_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *RegisterProjectRequest) GetProjectName() string {
+	if x != nil {
+		return x.ProjectName
+	}
+	return ""
+}
+
+func (x *RegisterProjectRequest) GetRepositoryUrl() string {
+	if x != nil {
+		return x.RepositoryUrl
+	}
+	return ""
+}
+
+type RegisterProjectResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Version       string                 `protobuf:"bytes,1,opt,name=version,proto3" json:"version,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RegisterProjectResponse) Reset() {
+	*x = RegisterProjectResponse{}
+	mi := &file_proto_seraphine_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RegisterProjectResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RegisterProjectResponse) ProtoMessage() {}
+
+func (x *RegisterProjectResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_seraphine_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RegisterProjectResponse.ProtoReflect.Descriptor instead.
+func (*RegisterProjectResponse) Descriptor() ([]byte, []int) {
+	return file_proto_seraphine_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *RegisterProjectResponse) GetVersion() string {
+	if x != nil {
+		return x.Version
+	}
+	return ""
+}
+
 type GetProjectStateRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	ProjectName    string                 `protobuf:"bytes,1,opt,name=project_name,json=projectName,proto3" json:"project_name,omitempty"`
@@ -31,7 +127,7 @@ type GetProjectStateRequest struct {
 
 func (x *GetProjectStateRequest) Reset() {
 	*x = GetProjectStateRequest{}
-	mi := &file_proto_seraphine_proto_msgTypes[0]
+	mi := &file_proto_seraphine_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -43,7 +139,7 @@ func (x *GetProjectStateRequest) String() string {
 func (*GetProjectStateRequest) ProtoMessage() {}
 
 func (x *GetProjectStateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_seraphine_proto_msgTypes[0]
+	mi := &file_proto_seraphine_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -56,7 +152,7 @@ func (x *GetProjectStateRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetProjectStateRequest.ProtoReflect.Descriptor instead.
 func (*GetProjectStateRequest) Descriptor() ([]byte, []int) {
-	return file_proto_seraphine_proto_rawDescGZIP(), []int{0}
+	return file_proto_seraphine_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *GetProjectStateRequest) GetProjectName() string {
@@ -83,7 +179,7 @@ type File struct {
 
 func (x *File) Reset() {
 	*x = File{}
-	mi := &file_proto_seraphine_proto_msgTypes[1]
+	mi := &file_proto_seraphine_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -95,7 +191,7 @@ func (x *File) String() string {
 func (*File) ProtoMessage() {}
 
 func (x *File) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_seraphine_proto_msgTypes[1]
+	mi := &file_proto_seraphine_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -108,7 +204,7 @@ func (x *File) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use File.ProtoReflect.Descriptor instead.
 func (*File) Descriptor() ([]byte, []int) {
-	return file_proto_seraphine_proto_rawDescGZIP(), []int{1}
+	return file_proto_seraphine_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *File) GetPath() string {
@@ -135,7 +231,7 @@ type GetProjectStateResponse struct {
 
 func (x *GetProjectStateResponse) Reset() {
 	*x = GetProjectStateResponse{}
-	mi := &file_proto_seraphine_proto_msgTypes[2]
+	mi := &file_proto_seraphine_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -147,7 +243,7 @@ func (x *GetProjectStateResponse) String() string {
 func (*GetProjectStateResponse) ProtoMessage() {}
 
 func (x *GetProjectStateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_seraphine_proto_msgTypes[2]
+	mi := &file_proto_seraphine_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -160,7 +256,7 @@ func (x *GetProjectStateResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetProjectStateResponse.ProtoReflect.Descriptor instead.
 func (*GetProjectStateResponse) Descriptor() ([]byte, []int) {
-	return file_proto_seraphine_proto_rawDescGZIP(), []int{2}
+	return file_proto_seraphine_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *GetProjectStateResponse) GetVersion() string {
@@ -181,7 +277,12 @@ var File_proto_seraphine_proto protoreflect.FileDescriptor
 
 const file_proto_seraphine_proto_rawDesc = "" +
 	"\n" +
-	"\x15proto/seraphine.proto\x12\tseraphine\"d\n" +
+	"\x15proto/seraphine.proto\x12\tseraphine\"b\n" +
+	"\x16RegisterProjectRequest\x12!\n" +
+	"\fproject_name\x18\x01 \x01(\tR\vprojectName\x12%\n" +
+	"\x0erepository_url\x18\x02 \x01(\tR\rrepositoryUrl\"3\n" +
+	"\x17RegisterProjectResponse\x12\x18\n" +
+	"\aversion\x18\x01 \x01(\tR\aversion\"d\n" +
 	"\x16GetProjectStateRequest\x12!\n" +
 	"\fproject_name\x18\x01 \x01(\tR\vprojectName\x12'\n" +
 	"\x0fcurrent_version\x18\x02 \x01(\tR\x0ecurrentVersion\"4\n" +
@@ -190,9 +291,10 @@ const file_proto_seraphine_proto_rawDesc = "" +
 	"\acontent\x18\x02 \x01(\fR\acontent\"Z\n" +
 	"\x17GetProjectStateResponse\x12\x18\n" +
 	"\aversion\x18\x01 \x01(\tR\aversion\x12%\n" +
-	"\x05files\x18\x02 \x03(\v2\x0f.seraphine.FileR\x05files2l\n" +
+	"\x05files\x18\x02 \x03(\v2\x0f.seraphine.FileR\x05files2\xc6\x01\n" +
 	"\x10SeraphineService\x12X\n" +
-	"\x0fGetProjectState\x12!.seraphine.GetProjectStateRequest\x1a\".seraphine.GetProjectStateResponseB)Z'github.com/brotherlogic/seraphine/protob\x06proto3"
+	"\x0fGetProjectState\x12!.seraphine.GetProjectStateRequest\x1a\".seraphine.GetProjectStateResponse\x12X\n" +
+	"\x0fRegisterProject\x12!.seraphine.RegisterProjectRequest\x1a\".seraphine.RegisterProjectResponseB)Z'github.com/brotherlogic/seraphine/protob\x06proto3"
 
 var (
 	file_proto_seraphine_proto_rawDescOnce sync.Once
@@ -206,18 +308,22 @@ func file_proto_seraphine_proto_rawDescGZIP() []byte {
 	return file_proto_seraphine_proto_rawDescData
 }
 
-var file_proto_seraphine_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_proto_seraphine_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_proto_seraphine_proto_goTypes = []any{
-	(*GetProjectStateRequest)(nil),  // 0: seraphine.GetProjectStateRequest
-	(*File)(nil),                    // 1: seraphine.File
-	(*GetProjectStateResponse)(nil), // 2: seraphine.GetProjectStateResponse
+	(*RegisterProjectRequest)(nil),  // 0: seraphine.RegisterProjectRequest
+	(*RegisterProjectResponse)(nil), // 1: seraphine.RegisterProjectResponse
+	(*GetProjectStateRequest)(nil),  // 2: seraphine.GetProjectStateRequest
+	(*File)(nil),                    // 3: seraphine.File
+	(*GetProjectStateResponse)(nil), // 4: seraphine.GetProjectStateResponse
 }
 var file_proto_seraphine_proto_depIdxs = []int32{
-	1, // 0: seraphine.GetProjectStateResponse.files:type_name -> seraphine.File
-	0, // 1: seraphine.SeraphineService.GetProjectState:input_type -> seraphine.GetProjectStateRequest
-	2, // 2: seraphine.SeraphineService.GetProjectState:output_type -> seraphine.GetProjectStateResponse
-	2, // [2:3] is the sub-list for method output_type
-	1, // [1:2] is the sub-list for method input_type
+	3, // 0: seraphine.GetProjectStateResponse.files:type_name -> seraphine.File
+	2, // 1: seraphine.SeraphineService.GetProjectState:input_type -> seraphine.GetProjectStateRequest
+	0, // 2: seraphine.SeraphineService.RegisterProject:input_type -> seraphine.RegisterProjectRequest
+	4, // 3: seraphine.SeraphineService.GetProjectState:output_type -> seraphine.GetProjectStateResponse
+	1, // 4: seraphine.SeraphineService.RegisterProject:output_type -> seraphine.RegisterProjectResponse
+	3, // [3:5] is the sub-list for method output_type
+	1, // [1:3] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
 	1, // [1:1] is the sub-list for extension extendee
 	0, // [0:1] is the sub-list for field type_name
@@ -234,7 +340,7 @@ func file_proto_seraphine_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_seraphine_proto_rawDesc), len(file_proto_seraphine_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   3,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
