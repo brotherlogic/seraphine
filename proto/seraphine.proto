@@ -6,6 +6,16 @@ option go_package = "github.com/brotherlogic/seraphine/proto";
 
 service SeraphineService {
   rpc GetProjectState(GetProjectStateRequest) returns (GetProjectStateResponse);
+  rpc RegisterProject(RegisterProjectRequest) returns (RegisterProjectResponse);
+}
+
+message RegisterProjectRequest {
+  string project_name = 1;
+  string repository_url = 2;
+}
+
+message RegisterProjectResponse {
+  string version = 1;
 }
 
 message GetProjectStateRequest {
