@@ -3,6 +3,10 @@ name: grill-me
 description: Relentlessly interview the user about a plan or design until a shared understanding is reached. Use this to stress-test ideas, find edge cases, and resolve dependencies before writing code.
 ---
 
+# Precondition
+
+This work should be carried out in the context of an existing github issue. If there is not issue, ask for one to be created before continuing.
+
 # Grill Me
 
 This skill implements an adversarial interviewing process to stress-test plans and designs.
@@ -21,3 +25,7 @@ This skill implements an adversarial interviewing process to stress-test plans a
 -   **Adversarial**: Be critical and look for ways the plan could fail.
 -   **Relentless**: Don't stop until you are satisfied that the plan is robust.
 -   **Structured**: Walk down each branch of the design tree, resolving dependencies between decisions.
+
+## Finishing
+
+When the shared understanding has been built post it to the underlying issue and then stop - do not carry on with any implementation.
