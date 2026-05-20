@@ -2,6 +2,7 @@
 // README at: https://github.com/devcontainers/templates/tree/main/src/ubuntu
 {
 	"name": "Seraphine",
+	"__rebuild_trigger": "2025-05-15T00:00:00Z",
 	"image": "mcr.microsoft.com/devcontainers/base:noble",
 	"features": {
 		"ghcr.io/devcontainers/features/go:1": {},
