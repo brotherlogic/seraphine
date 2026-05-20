@@ -14,6 +14,10 @@ seraphine init
 
 in the project root. This adds .seraphine directory to the project and gives seraphine the necessary permissions to push changes and manage issues etc. It also installs the necessary tools and skills in the devcontainer for the project.
 
+## GitHub Repository Configuration
+
+During the upgrade process (`seraphine upgrade`), the CLI automatically reconciles GitHub repository and workflow settings (such as workflow default permissions and merge behaviors) to align with desired states provided by the server. This requires the `gh` CLI to be installed and authenticated.
+
 ## Feature planning
 
 To build out a new feature we either create an issue with a broadly defined statement or label an existing feature request under 'seraphine-feature'.

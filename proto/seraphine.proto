@@ -28,7 +28,13 @@ message File {
   bytes content = 2;
 }
 
+message GithubSetting {
+  string key = 1;
+  string value = 2;
+}
+
 message GetProjectStateResponse {
   string version = 1;
   repeated File files = 2;
+  repeated GithubSetting github_settings = 3;
 }
