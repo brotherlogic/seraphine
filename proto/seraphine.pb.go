@@ -221,17 +221,70 @@ func (x *File) GetContent() []byte {
 	return nil
 }
 
-type GetProjectStateResponse struct {
+type GithubSetting struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Version       string                 `protobuf:"bytes,1,opt,name=version,proto3" json:"version,omitempty"`
-	Files         []*File                `protobuf:"bytes,2,rep,name=files,proto3" json:"files,omitempty"`
+	Key           string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	Value         string                 `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
+func (x *GithubSetting) Reset() {
+	*x = GithubSetting{}
+	mi := &file_proto_seraphine_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GithubSetting) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GithubSetting) ProtoMessage() {}
+
+func (x *GithubSetting) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_seraphine_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GithubSetting.ProtoReflect.Descriptor instead.
+func (*GithubSetting) Descriptor() ([]byte, []int) {
+	return file_proto_seraphine_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *GithubSetting) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
+func (x *GithubSetting) GetValue() string {
+	if x != nil {
+		return x.Value
+	}
+	return ""
+}
+
+type GetProjectStateResponse struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Version        string                 `protobuf:"bytes,1,opt,name=version,proto3" json:"version,omitempty"`
+	Files          []*File                `protobuf:"bytes,2,rep,name=files,proto3" json:"files,omitempty"`
+	GithubSettings []*GithubSetting       `protobuf:"bytes,3,rep,name=github_settings,json=githubSettings,proto3" json:"github_settings,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
 func (x *GetProjectStateResponse) Reset() {
 	*x = GetProjectStateResponse{}
-	mi := &file_proto_seraphine_proto_msgTypes[4]
+	mi := &file_proto_seraphine_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -243,7 +296,7 @@ func (x *GetProjectStateResponse) String() string {
 func (*GetProjectStateResponse) ProtoMessage() {}
 
 func (x *GetProjectStateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_seraphine_proto_msgTypes[4]
+	mi := &file_proto_seraphine_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -256,7 +309,7 @@ func (x *GetProjectStateResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetProjectStateResponse.ProtoReflect.Descriptor instead.
 func (*GetProjectStateResponse) Descriptor() ([]byte, []int) {
-	return file_proto_seraphine_proto_rawDescGZIP(), []int{4}
+	return file_proto_seraphine_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *GetProjectStateResponse) GetVersion() string {
@@ -269,6 +322,13 @@ func (x *GetProjectStateResponse) GetVersion() string {
 func (x *GetProjectStateResponse) GetFiles() []*File {
 	if x != nil {
 		return x.Files
+	}
+	return nil
+}
+
+func (x *GetProjectStateResponse) GetGithubSettings() []*GithubSetting {
+	if x != nil {
+		return x.GithubSettings
 	}
 	return nil
 }
@@ -288,10 +348,14 @@ const file_proto_seraphine_proto_rawDesc = "" +
 	"\x0fcurrent_version\x18\x02 \x01(\tR\x0ecurrentVersion\"4\n" +
 	"\x04File\x12\x12\n" +
 	"\x04path\x18\x01 \x01(\tR\x04path\x12\x18\n" +
-	"\acontent\x18\x02 \x01(\fR\acontent\"Z\n" +
+	"\acontent\x18\x02 \x01(\fR\acontent\"7\n" +
+	"\rGithubSetting\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value\"\x9d\x01\n" +
 	"\x17GetProjectStateResponse\x12\x18\n" +
 	"\aversion\x18\x01 \x01(\tR\aversion\x12%\n" +
-	"\x05files\x18\x02 \x03(\v2\x0f.seraphine.FileR\x05files2\xc6\x01\n" +
+	"\x05files\x18\x02 \x03(\v2\x0f.seraphine.FileR\x05files\x12A\n" +
+	"\x0fgithub_settings\x18\x03 \x03(\v2\x18.seraphine.GithubSettingR\x0egithubSettings2\xc6\x01\n" +
 	"\x10SeraphineService\x12X\n" +
 	"\x0fGetProjectState\x12!.seraphine.GetProjectStateRequest\x1a\".seraphine.GetProjectStateResponse\x12X\n" +
 	"\x0fRegisterProject\x12!.seraphine.RegisterProjectRequest\x1a\".seraphine.RegisterProjectResponseB)Z'github.com/brotherlogic/seraphine/protob\x06proto3"
@@ -308,25 +372,27 @@ func file_proto_seraphine_proto_rawDescGZIP() []byte {
 	return file_proto_seraphine_proto_rawDescData
 }
 
-var file_proto_seraphine_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_proto_seraphine_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_proto_seraphine_proto_goTypes = []any{
 	(*RegisterProjectRequest)(nil),  // 0: seraphine.RegisterProjectRequest
 	(*RegisterProjectResponse)(nil), // 1: seraphine.RegisterProjectResponse
 	(*GetProjectStateRequest)(nil),  // 2: seraphine.GetProjectStateRequest
 	(*File)(nil),                    // 3: seraphine.File
-	(*GetProjectStateResponse)(nil), // 4: seraphine.GetProjectStateResponse
+	(*GithubSetting)(nil),           // 4: seraphine.GithubSetting
+	(*GetProjectStateResponse)(nil), // 5: seraphine.GetProjectStateResponse
 }
 var file_proto_seraphine_proto_depIdxs = []int32{
 	3, // 0: seraphine.GetProjectStateResponse.files:type_name -> seraphine.File
-	2, // 1: seraphine.SeraphineService.GetProjectState:input_type -> seraphine.GetProjectStateRequest
-	0, // 2: seraphine.SeraphineService.RegisterProject:input_type -> seraphine.RegisterProjectRequest
-	4, // 3: seraphine.SeraphineService.GetProjectState:output_type -> seraphine.GetProjectStateResponse
-	1, // 4: seraphine.SeraphineService.RegisterProject:output_type -> seraphine.RegisterProjectResponse
-	3, // [3:5] is the sub-list for method output_type
-	1, // [1:3] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	4, // 1: seraphine.GetProjectStateResponse.github_settings:type_name -> seraphine.GithubSetting
+	2, // 2: seraphine.SeraphineService.GetProjectState:input_type -> seraphine.GetProjectStateRequest
+	0, // 3: seraphine.SeraphineService.RegisterProject:input_type -> seraphine.RegisterProjectRequest
+	5, // 4: seraphine.SeraphineService.GetProjectState:output_type -> seraphine.GetProjectStateResponse
+	1, // 5: seraphine.SeraphineService.RegisterProject:output_type -> seraphine.RegisterProjectResponse
+	4, // [4:6] is the sub-list for method output_type
+	2, // [2:4] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_proto_seraphine_proto_init() }
@@ -340,7 +406,7 @@ func file_proto_seraphine_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_seraphine_proto_rawDesc), len(file_proto_seraphine_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   5,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

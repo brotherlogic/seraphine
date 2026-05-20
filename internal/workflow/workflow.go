@@ -112,6 +112,20 @@ func RunSync(ctx context.Context, serverAddr string) error {
 		return fmt.Errorf("error reconciling project state: %w", err)
 	}
 
+	repoURL, err := getGitRemoteURL()
+	if err != nil {
+		return fmt.Errorf("error getting git remote URL: %w", err)
+	}
+	ownerRepo, err := extractProjectName(repoURL)
+	if err != nil {
+		return fmt.Errorf("error extracting project name: %w", err)
+	}
+
+	err = reconciler.ReconcileGithubSettings(ctx, ownerRepo, resp.GithubSettings)
+	if err != nil {
+		return fmt.Errorf("error reconciling github settings: %w", err)
+	}
+
 	cfg.Version = resp.Version
 	err = config.WriteConfig(cfg)
 	if err != nil {
