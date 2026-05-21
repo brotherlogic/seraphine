@@ -11,6 +11,7 @@ import (
 	"github.com/brotherlogic/seraphine/internal/client"
 	"github.com/brotherlogic/seraphine/internal/config"
 	"github.com/brotherlogic/seraphine/internal/reconciler"
+	pb "github.com/brotherlogic/seraphine/proto"
 )
 
 func RunInit(ctx context.Context, serverAddr string) error {
@@ -34,8 +35,9 @@ func RunInit(ctx context.Context, serverAddr string) error {
 		}
 	}
 
-	cfg := &config.Config{
-		Version: "0",
+	cfg := &pb.ProjectConfig{
+		ProjectName: projectName,
+		Version:     "0",
 	}
 	if resp != nil && resp.Version != "" {
 		cfg.Version = resp.Version
@@ -86,15 +88,18 @@ func extractProjectName(repoURL string) (string, error) {
 }
 
 func RunSync(ctx context.Context, serverAddr string) error {
-	dir, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("error getting current directory: %w", err)
-	}
-	projectName := filepath.Base(dir)
-
 	cfg, err := config.ReadConfig()
 	if err != nil {
 		return fmt.Errorf("error reading config: %w", err)
+	}
+
+	projectName := cfg.ProjectName
+	if projectName == "" {
+		dir, err := os.Getwd()
+		if err != nil {
+			return fmt.Errorf("error getting current directory: %w", err)
+		}
+		projectName = filepath.Base(dir)
 	}
 
 	resp, err := client.GetProjectState(ctx, serverAddr, projectName, cfg.Version)
@@ -132,6 +137,50 @@ func RunSync(ctx context.Context, serverAddr string) error {
 		return fmt.Errorf("error writing config: %w", err)
 	}
 
+	err = gitCommitAndPush(cfg.Version)
+	if err != nil {
+		return fmt.Errorf("error pushing upgrade branch: %w", err)
+	}
+
 	fmt.Printf("Successfully synced project to version %s\n", cfg.Version)
+	return nil
+}
+
+func gitCommitAndPush(version string) error {
+	out, err := exec.Command("git", "status", "--porcelain").Output()
+	if err != nil {
+		return fmt.Errorf("failed to check git status: %w", err)
+	}
+	if len(strings.TrimSpace(string(out))) == 0 {
+		fmt.Println("No file changes to commit.")
+		return nil
+	}
+
+	branchName := fmt.Sprintf("seraphine/upgrade-%s", version)
+
+	cmd := exec.Command("git", "checkout", "-b", branchName)
+	if err := cmd.Run(); err != nil {
+		cmd = exec.Command("git", "checkout", branchName)
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("failed to checkout branch: %w", err)
+		}
+	}
+
+	cmd = exec.Command("git", "add", ".")
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to add files: %w", err)
+	}
+
+	commitMsg := fmt.Sprintf("chore: automated seraphine upgrade to %s", version)
+	cmd = exec.Command("git", "commit", "-m", commitMsg)
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to commit: %w", err)
+	}
+
+	cmd = exec.Command("git", "push", "-u", "origin", branchName)
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to push branch: %w", err)
+	}
+
 	return nil
 }
