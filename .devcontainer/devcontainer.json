@@ -28,8 +28,9 @@
 		"--security-opt",
 	    "label=disable",
 	    "--env-file",
-		"${localWorkspaceFolder}/.devcontainer/.env.auth"
-	    
+		"${localWorkspaceFolder}/.devcontainer/.env.auth",
+		"--env",
+		"DBUS_SESSION_BUS_ADDRESS"
 	],
 	"containerEnv": {
 		"GH_GIT_PROTOCOL": "ssh",
@@ -42,6 +43,8 @@
 			"type": "bind",
 			"options": "readonly" 
 		},
-	    		"source=${localEnv:HOME}/.gemini,target=/home/vscode/.gemini,type=bind"
+	    "source=${localEnv:HOME}/.gemini,target=/home/vscode/.gemini,type=bind",
+		"source=/var/run/dbus,target=/var/run/dbus,type=bind",
+		"source=/run/user,target=/run/user,type=bind"
 	]
 }
