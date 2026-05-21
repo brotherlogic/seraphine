@@ -6,13 +6,20 @@ Seraphine is a workflow and system for running code - it is planning and review 
 
 The workflow consists of three steps - we start from a broadly defined github issue which outlines a new features. We then refine the feature and tease out the requirements, plan out some work, breaking it down into managable features and then review the code that implements the feature.
 
-## Init
+## Commands
 
-To init a project we run:
+### `seraphine init`
 
-seraphine init
+Initializes a repository with the "blessed" Seraphine configuration.
 
-in the project root. This adds .seraphine directory to the project and gives seraphine the necessary permissions to push changes and manage issues etc. It also installs the necessary tools and skills in the devcontainer for the project.
+### `seraphine upgrade`
+
+Automatically reconciles the local repository files with the current configuration mandated by the Seraphine server.
+
+- Ensures alignment of GitHub workflows and scripts.
+- Overwrites any local modifications to managed files to strictly enforce organizational standards.
+- Safely cleans up previously managed files that have been removed from the server's blessed list.
+- Commits changes to an upgrade branch (`seraphine/upgrade-<version>`) and pushes them to GitHub.
 
 ## GitHub Repository Configuration
 

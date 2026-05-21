@@ -39,4 +39,17 @@ func TestReconcile(t *testing.T) {
 	if err != nil || string(content) != "world" {
 		t.Errorf("subdir/subtest.txt content mismatch: %v, %s", err, string(content))
 	}
+
+	// Test Deletion
+	files = []*pb.File{
+		{Path: "test.txt", Delete: true},
+	}
+	err = Reconcile(files)
+	if err != nil {
+		t.Errorf("Reconcile (delete) failed: %v", err)
+	}
+
+	if _, err := os.Stat("test.txt"); !os.IsNotExist(err) {
+		t.Errorf("test.txt should have been deleted, err: %v", err)
+	}
 }

@@ -3,34 +3,31 @@ package config
 import (
 	"os"
 
-	"gopkg.in/yaml.v3"
+	pb "github.com/brotherlogic/seraphine/proto"
+	"google.golang.org/protobuf/encoding/prototext"
 )
 
-type Config struct {
-	Version string `yaml:"version"`
-}
+const ConfigPath = ".seraphine/config.textpb"
 
-const ConfigPath = ".seraphine/config.yaml"
-
-func ReadConfig() (*Config, error) {
+func ReadConfig() (*pb.ProjectConfig, error) {
 	data, err := os.ReadFile(ConfigPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return &Config{}, nil
+			return &pb.ProjectConfig{}, nil
 		}
 		return nil, err
 	}
-	var cfg Config
-	err = yaml.Unmarshal(data, &cfg)
+	var cfg pb.ProjectConfig
+	err = prototext.Unmarshal(data, &cfg)
 	return &cfg, err
 }
 
-func WriteConfig(cfg *Config) error {
+func WriteConfig(cfg *pb.ProjectConfig) error {
 	err := os.MkdirAll(".seraphine", 0755)
 	if err != nil {
 		return err
 	}
-	data, err := yaml.Marshal(cfg)
+	data, err := prototext.MarshalOptions{Multiline: true}.Marshal(cfg)
 	if err != nil {
 		return err
 	}
