@@ -9,6 +9,14 @@ import (
 
 func Reconcile(files []*pb.File) error {
 	for _, file := range files {
+		if file.Delete {
+			err := os.RemoveAll(file.Path)
+			if err != nil {
+				return err
+			}
+			continue
+		}
+
 		dir := filepath.Dir(file.Path)
 		if dir != "." {
 			err := os.MkdirAll(dir, 0755)

@@ -173,6 +173,7 @@ type File struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Path          string                 `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
 	Content       []byte                 `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"`
+	Delete        bool                   `protobuf:"varint,3,opt,name=delete,proto3" json:"delete,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -219,6 +220,13 @@ func (x *File) GetContent() []byte {
 		return x.Content
 	}
 	return nil
+}
+
+func (x *File) GetDelete() bool {
+	if x != nil {
+		return x.Delete
+	}
+	return false
 }
 
 type GithubSetting struct {
@@ -333,6 +341,58 @@ func (x *GetProjectStateResponse) GetGithubSettings() []*GithubSetting {
 	return nil
 }
 
+type ProjectConfig struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ProjectName   string                 `protobuf:"bytes,1,opt,name=project_name,json=projectName,proto3" json:"project_name,omitempty"`
+	Version       string                 `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ProjectConfig) Reset() {
+	*x = ProjectConfig{}
+	mi := &file_proto_seraphine_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ProjectConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ProjectConfig) ProtoMessage() {}
+
+func (x *ProjectConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_seraphine_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ProjectConfig.ProtoReflect.Descriptor instead.
+func (*ProjectConfig) Descriptor() ([]byte, []int) {
+	return file_proto_seraphine_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *ProjectConfig) GetProjectName() string {
+	if x != nil {
+		return x.ProjectName
+	}
+	return ""
+}
+
+func (x *ProjectConfig) GetVersion() string {
+	if x != nil {
+		return x.Version
+	}
+	return ""
+}
+
 var File_proto_seraphine_proto protoreflect.FileDescriptor
 
 const file_proto_seraphine_proto_rawDesc = "" +
@@ -345,17 +405,21 @@ const file_proto_seraphine_proto_rawDesc = "" +
 	"\aversion\x18\x01 \x01(\tR\aversion\"d\n" +
 	"\x16GetProjectStateRequest\x12!\n" +
 	"\fproject_name\x18\x01 \x01(\tR\vprojectName\x12'\n" +
-	"\x0fcurrent_version\x18\x02 \x01(\tR\x0ecurrentVersion\"4\n" +
+	"\x0fcurrent_version\x18\x02 \x01(\tR\x0ecurrentVersion\"L\n" +
 	"\x04File\x12\x12\n" +
 	"\x04path\x18\x01 \x01(\tR\x04path\x12\x18\n" +
-	"\acontent\x18\x02 \x01(\fR\acontent\"7\n" +
+	"\acontent\x18\x02 \x01(\fR\acontent\x12\x16\n" +
+	"\x06delete\x18\x03 \x01(\bR\x06delete\"7\n" +
 	"\rGithubSetting\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value\"\x9d\x01\n" +
 	"\x17GetProjectStateResponse\x12\x18\n" +
 	"\aversion\x18\x01 \x01(\tR\aversion\x12%\n" +
 	"\x05files\x18\x02 \x03(\v2\x0f.seraphine.FileR\x05files\x12A\n" +
-	"\x0fgithub_settings\x18\x03 \x03(\v2\x18.seraphine.GithubSettingR\x0egithubSettings2\xc6\x01\n" +
+	"\x0fgithub_settings\x18\x03 \x03(\v2\x18.seraphine.GithubSettingR\x0egithubSettings\"L\n" +
+	"\rProjectConfig\x12!\n" +
+	"\fproject_name\x18\x01 \x01(\tR\vprojectName\x12\x18\n" +
+	"\aversion\x18\x02 \x01(\tR\aversion2\xc6\x01\n" +
 	"\x10SeraphineService\x12X\n" +
 	"\x0fGetProjectState\x12!.seraphine.GetProjectStateRequest\x1a\".seraphine.GetProjectStateResponse\x12X\n" +
 	"\x0fRegisterProject\x12!.seraphine.RegisterProjectRequest\x1a\".seraphine.RegisterProjectResponseB)Z'github.com/brotherlogic/seraphine/protob\x06proto3"
@@ -372,7 +436,7 @@ func file_proto_seraphine_proto_rawDescGZIP() []byte {
 	return file_proto_seraphine_proto_rawDescData
 }
 
-var file_proto_seraphine_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_proto_seraphine_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_proto_seraphine_proto_goTypes = []any{
 	(*RegisterProjectRequest)(nil),  // 0: seraphine.RegisterProjectRequest
 	(*RegisterProjectResponse)(nil), // 1: seraphine.RegisterProjectResponse
@@ -380,6 +444,7 @@ var file_proto_seraphine_proto_goTypes = []any{
 	(*File)(nil),                    // 3: seraphine.File
 	(*GithubSetting)(nil),           // 4: seraphine.GithubSetting
 	(*GetProjectStateResponse)(nil), // 5: seraphine.GetProjectStateResponse
+	(*ProjectConfig)(nil),           // 6: seraphine.ProjectConfig
 }
 var file_proto_seraphine_proto_depIdxs = []int32{
 	3, // 0: seraphine.GetProjectStateResponse.files:type_name -> seraphine.File
@@ -406,7 +471,7 @@ func file_proto_seraphine_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_seraphine_proto_rawDesc), len(file_proto_seraphine_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   6,
+			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -3,6 +3,8 @@ package config
 import (
 	"os"
 	"testing"
+
+	pb "github.com/brotherlogic/seraphine/proto"
 )
 
 func TestConfigReadWrite(t *testing.T) {
@@ -16,7 +18,7 @@ func TestConfigReadWrite(t *testing.T) {
 	os.Chdir(tmpDir)
 	defer os.Chdir(oldWd)
 
-	cfg := &Config{Version: "12345"}
+	cfg := &pb.ProjectConfig{Version: "12345"}
 	err = WriteConfig(cfg)
 	if err != nil {
 		t.Fatalf("WriteConfig failed: %v", err)
