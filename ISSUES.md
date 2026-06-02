@@ -74,7 +74,7 @@ graph TD
     B --> C[2. Perform Pre-Flight Codebase Analysis]
     C --> D[3. Interactive Grilling Session /grill-me]
     D --> E[4. Technical Implementation Plan Formulation]
-    E --> F[5. Post Plan & Transition to seraphine-break-down-issue]
+    E --> F[5. Post Plan & Create Breakdown Sub-Issue]
 ```
 
 ---
@@ -111,17 +111,20 @@ Once a shared understanding of technical details is reached, Seraphine compiles 
   4. **Frontend (React) Implementation Details:** Component names, hook usage, routes, CSS design tokens, and styling updates.
   5. **Testing Strategy:** Plan for backend Go tests (`go test -v ./...`), integration verifications, and manual frontend testing steps.
 
-#### 5. Post Plan & Update Labels
+#### 5. Post Plan & Create Breakdown Sub-Issue
 Seraphine posts the finalized implementation plan to the sub-issue using premium markdown formatting (collapsible `<details>` blocks, interactive task lists `- [ ]`, Mermaid diagrams, and direct file path links).
 * **Action:**
-  1. Remove the `seraphine-needs-implementation-plan` label.
-  2. Add the `seraphine-break-down-issue` label to the sub-issue.
+  1. Remove the `seraphine-needs-implementation-plan` label from the current `[Implementation Plan]` issue.
+  2. Programmatically create a new sub-issue:
+     - **Sub-Issue Title:** `[Breakdown] <Parent Issue Title>`
+     - **Sub-Issue Label:** `seraphine-break-down-issue`
+     - **Sub-Issue Description:** A link referencing the `[Implementation Plan]` issue and instructing the agent to begin the issue breakdown.
 
 ---
 
 ## 🛠️ The `seraphine-break-down-issue` Label Workflow
 
-When an issue (typically the `[Implementation Plan]` sub-issue) is labeled with `seraphine-break-down-issue`, the AI assistant (**Seraphine**) is triggered to break the technical implementation plan down into highly granular, junior-engineer-friendly component issues.
+When a sub-issue is labeled with `seraphine-break-down-issue` (typically the `[Breakdown]` sub-issue), the AI assistant (**Seraphine**) is triggered to break the technical implementation plan down into highly granular, junior-engineer-friendly component issues.
 
 ### 🔄 Workflow Lifecycle
 
@@ -138,7 +141,7 @@ graph TD
 ### 📋 Phase Guidelines
 
 #### 1. Read Context & Parent Issues
-The agent must read the description/body of the current issue and extract any referenced parent issue numbers (e.g., `#123` or direct links) to fetch all comments, the approved Product Requirements Document (PRD), and preceding technical discussions. This ensures the full historical context is captured before breaking down tasks.
+The agent must read the description/body of the current breakdown issue and extract the referenced implementation plan issue number (e.g., `#123` or direct link) to fetch the approved technical implementation plan and preceding discussions. This ensures the full historical context is captured before breaking down tasks.
 
 #### 2. Technical Breakdown Analysis
 Seraphine analyzes the technical implementation plan proposed in the current issue to isolate discrete work items.
@@ -151,15 +154,15 @@ Seraphine analyzes the technical implementation plan proposed in the current iss
 * **Dependency Identification:** Explicitly identify dependencies between component tasks. If task X is dependent on task Y being completed first, this sequence must be highlighted.
 
 #### 3. Programmatic Sub-Issue Creation
-For each identified component, Seraphine programmatically files a new GitHub sub-issue under the current issue.
+For each identified component, Seraphine programmatically files a new GitHub sub-issue under the current `[Breakdown]` issue.
 * **Sub-Issue Title:** Must use the format `[Sub-Issue] <Action>` (e.g., `[Sub-Issue] Implement pstore serialization for note status`).
-* **Sub-Issue Body:** Sub-issues should stand alone and do not need to include the parent implementation plan. Context can be picked up from the bug tree when needed. **Explicitly state issue dependencies in the description: if sub-issue X is dependent on sub-issue Y, this relationship must be clearly documented.**
+* **Sub-Issue Body:** Sub-issues should stand alone and do not need to include the parent implementation plan. **Explicitly state issue dependencies in the description: if sub-issue X is dependent on sub-issue Y, this relationship must be clearly documented. They must reference the `[Breakdown]` issue as their parent.**
 * **Sub-Issue Label:** Must be marked with the `seraphine-ready-to-implement` label.
 
 #### 4. Transition & Label Cleanup
 Once all component sub-issues are successfully filed:
-* **Remove the Label:** Remove the `seraphine-break-down-issue` label from the current issue.
-* **Keep Issue Open:** Do **not** close the current issue. Keep it open to serve as the overarching coordination point for the child tasks.
+* **Remove the Label:** Remove the `seraphine-break-down-issue` label from the current `[Breakdown]` issue.
+* **Keep Issue Open:** Do **not** close the `[Breakdown]` issue. Keep it open to serve as the overarching coordination point for the child tasks.
 
 ---
 
@@ -201,8 +204,8 @@ Follow a strict Test-Driven Development (TDD) cycle to ensure absolute correctne
 
 #### 5. Auto-Closing & Parent Resolution
 * **Auto-Close:** Do NOT close the sub-issue manually. The CI/CD pipeline will automatically close the issue once the PR is merged, relying on the `Closes #<ISSUE_NUMBER>` stanza embedded in the Pull Request.
-* **Parent Issue Checking:** Once the child issue is closed, programmatically inspect the parent issue(s) using the `gh` CLI (e.g., `gh issue list --state open` filtered by parent keywords) to check if any other sibling sub-issues remain open.
-* **Closing Parent Issues:** If and only if all sibling sub-issues are closed, proceed to close the parent issue. **Never close any issue that has open sub-issues.**
+* **Parent Issue Checking:** Once the child issue is closed, programmatically inspect the parent issue (`[Breakdown]` issue) using the `gh` CLI to check if any other sibling sub-issues remain open.
+* **Closing Parent Issues:** If and only if all sibling sub-issues are closed, proceed to close the parent `[Breakdown]` issue. Once the `[Breakdown]` issue is closed, close the associated `[Implementation Plan]` issue. Once the `[Implementation Plan]` issue is closed, close the original parent issue.
 
 ---
 
@@ -213,8 +216,8 @@ Follow a strict Test-Driven Development (TDD) cycle to ensure absolute correctne
 | **Requirements Gathering** | `seraphine-needs-requirements` | *None (Not yet created)* |
 | **Requirements Approved** | *(Label Removed)* | `[Implementation Plan] <Title>` labeled with `seraphine-needs-implementation-plan` |
 | **Implementation Plan Drafting** | *None* | `[Implementation Plan] <Title>` labeled with `seraphine-needs-implementation-plan` |
-| **Implementation Plan Approved** | *None* | `[Implementation Plan] <Title>` labeled with `seraphine-break-down-issue` |
-| **Issue Breakdown** | *None* | **Plan Issue:** `seraphine-break-down-issue` removed (remains Open).<br>**Child Sub-Issues:** `[Sub-Issue] <Action>` labeled with `seraphine-ready-to-implement` |
-| **Implementation** | *None* | **Plan Issue:** Remains open until all sub-issues close.<br>**Child Sub-Issues:** Labeled with `seraphine-ready-to-implement`. Closed programmatically via PR submission. |
+| **Implementation Plan Approved** | *None* | **Implementation Plan:** Label removed (remains Open).<br>**Breakdown Sub-Issue:** `[Breakdown] <Title>` labeled with `seraphine-break-down-issue` |
+| **Issue Breakdown** | *None* | **Breakdown Issue:** `seraphine-break-down-issue` removed (remains Open).<br>**Child Sub-Issues:** `[Sub-Issue] <Action>` labeled with `seraphine-ready-to-implement` |
+| **Implementation** | *None* | **Breakdown Issue:** Closed when all child sub-issues are closed (cascading to close Implementation Plan and Parent issues).<br>**Child Sub-Issues:** Labeled with `seraphine-ready-to-implement`. Closed programmatically via PR submission. |
 
 
