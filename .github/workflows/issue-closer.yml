@@ -1,0 +1,17 @@
+name: Issue Closer
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  close-issues:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run Issue Closer
+        run: |
+          echo "Running issue closer skeleton..."
