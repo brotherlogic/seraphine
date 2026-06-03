@@ -25,6 +25,11 @@ Automatically reconciles the local repository files with the current configurati
 
 During the upgrade process (`seraphine upgrade`), the CLI automatically reconciles GitHub repository and workflow settings (such as workflow default permissions and merge behaviors) to align with desired states provided by the server. This requires the `gh` CLI to be installed and authenticated.
 
+### GitHub Workflows
+
+We use automated workflows configured in the `.github/workflows/` directory to manage our processes:
+- **Issue Closer**: Automatically runs periodically (or manually) to close resolved issues based on the workflow lifecycle.
+
 ## Feature planning
 
 To build out a new feature we either create an issue with a broadly defined statement or label an existing feature request under 'seraphine-feature'.
