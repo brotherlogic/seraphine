@@ -1,19 +1,13 @@
 ---
 name: deep-research
-description: A skill to perform deep research on a problem space and evaluate potential options.
+description: Evaluate a problem space and identify the top viable options.
 ---
+# Deep Research
 
-# Deep Research Skill
+When using this skill, evaluate the problem space thoroughly to identify potential solutions. 
 
-## Objective
-Evaluate the problem space for the given issue until at least the top 3 viable options are identified. This acts as the sufficiency threshold for deep research.
+**Sufficiency Threshold:**
+Continue your evaluation until at least the top 3 viable options are identified. This is the minimum threshold for your research.
 
-## Process
-1. **Analyze the Problem**: Understand the context, requirements, and constraints of the problem space.
-2. **Identify Options**: Research and identify potential solutions or approaches.
-3. **Evaluate Options**: For each option, consider its pros, cons, complexity, and viability.
-4. **Sufficiency Threshold**: Continue your research until you have identified at least the **top 3 viable options**. You must reach this threshold before proceeding.
-5. **Synthesize Findings**: Present the options, along with their pros and cons. You may decide organically how best to present this information; no strict formatting template is required.
-
-## Completion
-Once you have formulated the summary with at least the top 3 viable options, present your findings and conclude the research phase.
+**Presentation:**
+Present the pros and cons of the identified options. You can decide organically how best to format and present this information; there is no strict formatting template required. Provide a comprehensive summary that helps in decision making.
