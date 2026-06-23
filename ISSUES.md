@@ -40,6 +40,8 @@ When an issue is labeled, refer to the corresponding workflow document under `.a
 
 | Phase | Parent Issue Label(s) | Sub-Issue Title & Label(s) |
 | :--- | :--- | :--- |
+| **Deep Research** | `seraphine-needs-deep-research` | *None (Not yet created)* |
+| **Deep Research Completed** | `seraphine-needs-deep-research` (Removed) | Issue labeled with `seraphine-needs-requirements` |
 | **Requirements Gathering** | `seraphine-needs-requirements` | *None (Not yet created)* |
 | **Requirements Approved** | *(Label Removed)* | `[Implementation Plan] <Title>` labeled with `seraphine-needs-implementation-plan` |
 | **Implementation Plan Drafting** | *None* | `[Implementation Plan] <Title>` labeled with `seraphine-needs-implementation-plan` |
