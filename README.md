@@ -47,7 +47,7 @@ We ask seraphine to build an implementation plan for the feature:
 
 $ seraphine implement
 
-It will then take the requirements from the issue, and break it down into implementation steps, potentially creating sub-issues for each piece of work. For the detailed GitHub issue workflow transitions, including decoupled planning and breakdown phases, please refer to [ISSUES.md](file:///workspaces/seraphine/ISSUES.md).
+It will then take the requirements from the issue, and break it down into implementation steps, potentially creating sub-issues for each piece of work. For the detailed GitHub issue workflow transitions, including deep research, decoupled planning and breakdown phases, please refer to [ISSUES.md](file:///workspaces/seraphine/ISSUES.md).
 
 ## Coding
 
