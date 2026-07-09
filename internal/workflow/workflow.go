@@ -11,10 +11,9 @@ import (
 	"github.com/brotherlogic/seraphine/internal/client"
 	"github.com/brotherlogic/seraphine/internal/config"
 	"github.com/brotherlogic/seraphine/internal/reconciler"
-	pb "github.com/brotherlogic/seraphine/proto"
 )
 
-func RunInit(ctx context.Context, serverAddr string) error {
+func RunInit(ctx context.Context) error {
 	repoURL, err := getGitRemoteURL()
 	if err != nil {
 		return fmt.Errorf("error getting git remote URL: %w", err)
@@ -25,32 +24,8 @@ func RunInit(ctx context.Context, serverAddr string) error {
 		return fmt.Errorf("error extracting project name: %w", err)
 	}
 
-	fmt.Printf("Registering project %s (%s)...\n", projectName, repoURL)
-	resp, err := client.RegisterProject(ctx, serverAddr, projectName, repoURL)
-	if err != nil {
-		if strings.Contains(err.Error(), "already registered") {
-			fmt.Println("Project is already registered.")
-		} else {
-			return fmt.Errorf("error registering project: %w", err)
-		}
-	}
+	fmt.Printf("Successfully initialized project %s\n", projectName)
 
-	cfg := &pb.ProjectConfig{
-		ProjectName: projectName,
-		Version:     "0",
-	}
-	if resp != nil && resp.Version != "" {
-		cfg.Version = resp.Version
-	}
-
-	err = config.WriteConfig(cfg)
-	if err != nil {
-		return fmt.Errorf("error writing config: %w", err)
-	}
-
-	fmt.Printf("Successfully initialized project at version %s\n", cfg.Version)
-
-	// Issue #11 will handle the automated upgrade, but for now we just finish init
 	return nil
 }
 
