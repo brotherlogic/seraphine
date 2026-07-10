@@ -50,6 +50,11 @@ func RunInit(ctx context.Context, serverAddr string) error {
 
 	fmt.Printf("Successfully initialized project at version %s\n", cfg.Version)
 
+	fmt.Println("Fetching workflows...")
+	if err := FetchWorkflows(ctx, "."); err != nil {
+		return fmt.Errorf("error fetching workflows: %w", err)
+	}
+
 	// Issue #11 will handle the automated upgrade, but for now we just finish init
 	return nil
 }
