@@ -26,3 +26,19 @@ func TestExtractProjectName(t *testing.T) {
 		}
 	}
 }
+
+func TestValidateRuleset(t *testing.T) {
+	// This should fail initially because validateRuleset is not implemented
+	err := validateRuleset("brotherlogic/seraphine")
+	if err != nil {
+		t.Errorf("validateRuleset() returned error: %v", err)
+	}
+}
+
+func TestFileRulesetIssue(t *testing.T) {
+	// This should fail initially because fileRulesetIssue is not implemented
+	err := fileRulesetIssue("brotherlogic/seraphine")
+	if err != nil {
+		t.Errorf("fileRulesetIssue() returned error: %v", err)
+	}
+}

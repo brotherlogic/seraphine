@@ -25,6 +25,15 @@ func RunInit(ctx context.Context, serverAddr string) error {
 		return fmt.Errorf("error extracting project name: %w", err)
 	}
 
+	err = validateRuleset(projectName)
+	if err != nil {
+		fmt.Printf("Ruleset validation failed: %v. Filing issue...\n", err)
+		err = fileRulesetIssue(projectName)
+		if err != nil {
+			fmt.Printf("Failed to file ruleset issue: %v\n", err)
+		}
+	}
+
 	fmt.Printf("Registering project %s (%s)...\n", projectName, repoURL)
 	resp, err := client.RegisterProject(ctx, serverAddr, projectName, repoURL)
 	if err != nil {
@@ -183,4 +192,14 @@ func gitCommitAndPush(version string) error {
 	}
 
 	return nil
+}
+
+func validateRuleset(ownerRepo string) error {
+	cmd := exec.Command("gh", "api", fmt.Sprintf("/repos/%s/rulesets", ownerRepo))
+	return cmd.Run()
+}
+
+func fileRulesetIssue(ownerRepo string) error {
+	cmd := exec.Command("gh", "issue", "create", "--repo", ownerRepo, "--title", "Add branch protection ruleset", "--body", "Please add a branch protection ruleset to ensure repository security and compliance.")
+	return cmd.Run()
 }

@@ -10,7 +10,7 @@ The workflow consists of three steps - we start from a broadly defined github is
 
 ### `seraphine init`
 
-Initializes a repository with the "blessed" Seraphine configuration.
+Initializes a repository with the "blessed" Seraphine configuration and validates branch protection rulesets, filing an issue if none are found.
 
 ### `seraphine upgrade`
 
