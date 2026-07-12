@@ -14,6 +14,9 @@ import (
 	pb "github.com/brotherlogic/seraphine/proto"
 )
 
+var execCommand = exec.Command
+
+
 func RunInit(ctx context.Context, serverAddr string) error {
 	repoURL, err := getGitRemoteURL()
 	if err != nil {
@@ -50,12 +53,23 @@ func RunInit(ctx context.Context, serverAddr string) error {
 
 	fmt.Printf("Successfully initialized project at version %s\n", cfg.Version)
 
+	// Validate ruleset
+	valid, err := validateRuleset(projectName)
+	if err != nil {
+		fmt.Printf("Error validating ruleset: %v\n", err)
+	} else if !valid {
+		fmt.Println("No branch protection ruleset found. Filing an issue...")
+		if err := fileRulesetIssue(projectName); err != nil {
+			fmt.Printf("Error filing ruleset issue: %v\n", err)
+		}
+	}
+
 	// Issue #11 will handle the automated upgrade, but for now we just finish init
 	return nil
 }
 
 func getGitRemoteURL() (string, error) {
-	out, err := exec.Command("git", "config", "--get", "remote.origin.url").Output()
+	out, err := execCommand("git", "config", "--get", "remote.origin.url").Output()
 	if err != nil {
 		return "", err
 	}
@@ -147,7 +161,7 @@ func RunSync(ctx context.Context, serverAddr string) error {
 }
 
 func gitCommitAndPush(version string) error {
-	out, err := exec.Command("git", "status", "--porcelain").Output()
+	out, err := execCommand("git", "status", "--porcelain").Output()
 	if err != nil {
 		return fmt.Errorf("failed to check git status: %w", err)
 	}
@@ -158,29 +172,48 @@ func gitCommitAndPush(version string) error {
 
 	branchName := fmt.Sprintf("seraphine/upgrade-%s", version)
 
-	cmd := exec.Command("git", "checkout", "-b", branchName)
+	cmd := execCommand("git", "checkout", "-b", branchName)
 	if err := cmd.Run(); err != nil {
-		cmd = exec.Command("git", "checkout", branchName)
+		cmd = execCommand("git", "checkout", branchName)
 		if err := cmd.Run(); err != nil {
 			return fmt.Errorf("failed to checkout branch: %w", err)
 		}
 	}
 
-	cmd = exec.Command("git", "add", ".")
+	cmd = execCommand("git", "add", ".")
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to add files: %w", err)
 	}
 
 	commitMsg := fmt.Sprintf("chore: automated seraphine upgrade to %s", version)
-	cmd = exec.Command("git", "commit", "-m", commitMsg)
+	cmd = execCommand("git", "commit", "-m", commitMsg)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to commit: %w", err)
 	}
 
-	cmd = exec.Command("git", "push", "-u", "origin", branchName)
+	cmd = execCommand("git", "push", "-u", "origin", branchName)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to push branch: %w", err)
 	}
 
 	return nil
+}
+
+func validateRuleset(ownerRepo string) (bool, error) {
+	cmd := execCommand("gh", "api", fmt.Sprintf("/repos/%s/rulesets", ownerRepo))
+	out, err := cmd.Output()
+	if err != nil {
+		return false, err
+	}
+	
+	// Check if it's an empty array "[]"
+	if strings.TrimSpace(string(out)) == "[]" {
+		return false, nil
+	}
+	return true, nil
+}
+
+func fileRulesetIssue(ownerRepo string) error {
+	cmd := execCommand("gh", "issue", "create", "--repo", ownerRepo, "--title", "Add branch protection ruleset", "--body", "Please add a branch protection ruleset.")
+	return cmd.Run()
 }
