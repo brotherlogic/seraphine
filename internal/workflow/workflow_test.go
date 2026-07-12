@@ -26,3 +26,10 @@ func TestExtractProjectName(t *testing.T) {
 		}
 	}
 }
+
+func TestValidateRuleset(t *testing.T) {
+	err := validateRuleset("brotherlogic/seraphine")
+	if err != nil {
+		t.Errorf("validateRuleset failed: %v", err)
+	}
+}

@@ -50,6 +50,15 @@ func RunInit(ctx context.Context, serverAddr string) error {
 
 	fmt.Printf("Successfully initialized project at version %s\n", cfg.Version)
 
+	if err := validateRuleset(projectName); err != nil {
+		fmt.Printf("Ruleset validation failed: %v. Filing an issue...\n", err)
+		if issueErr := fileRulesetIssue(projectName); issueErr != nil {
+			fmt.Printf("Failed to file ruleset issue: %v\n", issueErr)
+		} else {
+			fmt.Println("Successfully filed ruleset issue.")
+		}
+	}
+
 	// Issue #11 will handle the automated upgrade, but for now we just finish init
 	return nil
 }
@@ -60,6 +69,29 @@ func getGitRemoteURL() (string, error) {
 		return "", err
 	}
 	return strings.TrimSpace(string(out)), nil
+}
+
+func validateRuleset(ownerRepo string) error {
+	out, err := exec.Command("gh", "api", fmt.Sprintf("/repos/%s/rulesets", ownerRepo)).Output()
+	if err != nil {
+		return fmt.Errorf("error running gh api: %w", err)
+	}
+
+	if strings.TrimSpace(string(out)) == "[]" {
+		return fmt.Errorf("no rulesets found")
+	}
+
+	return nil
+}
+
+func fileRulesetIssue(ownerRepo string) error {
+	body := "Please add a branch protection ruleset to this repository to ensure code quality and security."
+	cmd := exec.Command("gh", "issue", "create", "--repo", ownerRepo, "--title", "Add branch protection ruleset", "--body", body)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("error creating issue: %v, output: %s", err, string(out))
+	}
+	return nil
 }
 
 func extractProjectName(repoURL string) (string, error) {
