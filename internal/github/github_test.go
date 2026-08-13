@@ -159,3 +159,72 @@ func TestCreateIssue_Success(t *testing.T) {
 		t.Errorf("expected issue number 42, got %d", resp.Number)
 	}
 }
+
+func TestIsCollaborator_True(t *testing.T) {
+	mockClient := &mockHTTPClient{
+		doFunc: func(req *http.Request) (*http.Response, error) {
+			if req.Method != http.MethodGet {
+				t.Errorf("expected GET request, got %s", req.Method)
+			}
+			if req.URL.Path != "/repos/owner/repo/collaborators/testuser" {
+				t.Errorf("expected path /repos/owner/repo/collaborators/testuser, got %s", req.URL.Path)
+			}
+			return &http.Response{
+				StatusCode: http.StatusNoContent,
+				Body:       io.NopCloser(bytes.NewBufferString("")),
+			}, nil
+		},
+	}
+
+	client := NewClient("test-token", mockClient)
+	isCollab, err := client.IsCollaborator(context.Background(), "owner", "repo", "testuser")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !isCollab {
+		t.Errorf("expected true, got false")
+	}
+}
+
+func TestIsCollaborator_False(t *testing.T) {
+	mockClient := &mockHTTPClient{
+		doFunc: func(req *http.Request) (*http.Response, error) {
+			if req.Method != http.MethodGet {
+				t.Errorf("expected GET request, got %s", req.Method)
+			}
+			if req.URL.Path != "/repos/owner/repo/collaborators/noncollaborator" {
+				t.Errorf("expected path /repos/owner/repo/collaborators/noncollaborator, got %s", req.URL.Path)
+			}
+			return &http.Response{
+				StatusCode: http.StatusNotFound,
+				Body:       io.NopCloser(bytes.NewBufferString("")),
+			}, nil
+		},
+	}
+
+	client := NewClient("test-token", mockClient)
+	isCollab, err := client.IsCollaborator(context.Background(), "owner", "repo", "noncollaborator")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if isCollab {
+		t.Errorf("expected false, got true")
+	}
+}
+
+func TestIsCollaborator_Error(t *testing.T) {
+	mockClient := &mockHTTPClient{
+		doFunc: func(req *http.Request) (*http.Response, error) {
+			return &http.Response{
+				StatusCode: http.StatusInternalServerError,
+				Body:       io.NopCloser(bytes.NewBufferString("internal error")),
+			}, nil
+		},
+	}
+
+	client := NewClient("test-token", mockClient)
+	_, err := client.IsCollaborator(context.Background(), "owner", "repo", "testuser")
+	if err == nil {
+		t.Fatalf("expected error, got nil")
+	}
+}
