@@ -56,4 +56,4 @@ Seraphine posts the finalized implementation plan to the sub-issue using premium
      - **Sub-Issue Title:** `[Breakdown] <Parent Issue Title>`
      - **Sub-Issue Label:** `seraphine-break-down-issue`
      - **Assignee:** `brotherlogic-automation`
-     - **Sub-Issue Description:** A link referencing the `[Implementation Plan]` issue and instructing the agent to begin the issue breakdown. Ensure the native GitHub sub-issue relationship is established with the parent issue.
+     - **Sub-Issue Description:** A link referencing the `[Implementation Plan]` issue and instructing the agent to begin the issue breakdown. Ensure the native GitHub sub-issue relationship is established with the `[Implementation Plan]` issue (not the requirements issue).
