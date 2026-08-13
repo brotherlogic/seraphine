@@ -9,11 +9,13 @@ import (
 	"github.com/brotherlogic/seraphine/internal/github"
 )
 
+// WebhookServer implements ghwebhook_pb.WebhookHandlerServer to handle incoming webhook events.
 type WebhookServer struct {
 	ghwebhook_pb.UnimplementedWebhookHandlerServer
 	ghClient github.Client
 }
 
+// NewWebhookServer creates a new instance of WebhookServer with the given GitHub client.
 func NewWebhookServer(ghClient github.Client) *WebhookServer {
 	return &WebhookServer{
 		ghClient: ghClient,
