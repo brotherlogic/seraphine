@@ -3,19 +3,21 @@ package server
 import (
 	"context"
 	"fmt"
-	"net"
-
-	pb "github.com/brotherlogic/seraphine/proto"
-	pstore_client "github.com/brotherlogic/pstore/client"
-	"github.com/brotherlogic/seraphine/internal/config"
-	"github.com/brotherlogic/seraphine/internal/github"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"log"
+	"net"
 	"os"
 	"strings"
 	"time"
+
+	pstore_client "github.com/brotherlogic/pstore/client"
+	ghwebhook_pb "github.com/brotherlogic/ghwebhook/proto/ghwebhook/v1"
+	"github.com/brotherlogic/seraphine/internal/config"
+	"github.com/brotherlogic/seraphine/internal/github"
+	pb "github.com/brotherlogic/seraphine/proto"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/status"
 )
 
 type seraphineServer struct {
@@ -32,7 +34,7 @@ func (s *seraphineServer) RegisterProject(ctx context.Context, req *pb.RegisterP
 	return nil, status.Errorf(codes.Unimplemented, "method RegisterProject not implemented")
 }
 
-func runSync(ctx context.Context, pClient pstore_client.PStoreClient, ghClient github.Client) error {
+func runSync(ctx context.Context, pClient pstore_client.PStoreClient, ghClient github.Client, regClient ghwebhook_pb.RegistrationServiceClient) error {
 	state, err := config.ReadServerState(ctx, pClient)
 	if err != nil {
 		return fmt.Errorf("failed to read server state: %w", err)
@@ -119,15 +121,31 @@ func runSync(ctx context.Context, pClient pstore_client.PStoreClient, ghClient g
 		}
 	}
 
+	if regClient != nil {
+		serviceAddr := os.Getenv("SERAPHINE_SERVICE_ADDRESS")
+		if serviceAddr == "" {
+			serviceAddr = "seraphine.seraphine.svc.cluster.local:9009"
+		}
+		for _, repoFullName := range state.EnrolledRepositories {
+			_, err := regClient.Register(ctx, &ghwebhook_pb.RegistrationRequest{
+				RepoFullName:   repoFullName,
+				ServiceAddress: serviceAddr,
+			})
+			if err != nil {
+				log.Printf("failed to register webhook for %s: %v", repoFullName, err)
+			}
+		}
+	}
+
 	return nil
 }
 
-func RunWorkerLoop(ctx context.Context, pClient pstore_client.PStoreClient, ghClient github.Client, interval time.Duration) {
+func RunWorkerLoop(ctx context.Context, pClient pstore_client.PStoreClient, ghClient github.Client, regClient ghwebhook_pb.RegistrationServiceClient, interval time.Duration) {
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
 	// Run once initially
-	if err := runSync(ctx, pClient, ghClient); err != nil {
+	if err := runSync(ctx, pClient, ghClient, regClient); err != nil {
 		log.Printf("sync error: %v", err)
 	}
 
@@ -136,7 +154,7 @@ func RunWorkerLoop(ctx context.Context, pClient pstore_client.PStoreClient, ghCl
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			if err := runSync(ctx, pClient, ghClient); err != nil {
+			if err := runSync(ctx, pClient, ghClient, regClient); err != nil {
 				log.Printf("sync error: %v", err)
 			}
 		}
@@ -155,6 +173,13 @@ func Run(port string) error {
 	fmt.Printf("Starting Seraphine gRPC server on %s...\n", port)
 
 	token := os.Getenv("GH_TOKEN")
+	var ghClient github.Client
+	if token != "" {
+		ghClient = github.NewClient(token, nil)
+	}
+	webhookServer := NewWebhookServer(ghClient)
+	ghwebhook_pb.RegisterWebhookHandlerServer(grpcServer, webhookServer)
+
 	if token == "" {
 		log.Printf("GH_TOKEN is not set, skipping background worker")
 	} else {
@@ -162,9 +187,16 @@ func Run(port string) error {
 		if err != nil {
 			return fmt.Errorf("failed to get pstore client: %w", err)
 		}
-		ghClient := github.NewClient(token, nil)
-		go RunWorkerLoop(context.Background(), pClient, ghClient, 1*time.Hour)
+
+		var regClient ghwebhook_pb.RegistrationServiceClient
+		conn, err := grpc.Dial("ghwebhook.ghwebhook.svc.cluster.local:8080", grpc.WithTransportCredentials(insecure.NewCredentials()))
+		if err == nil && conn != nil {
+			regClient = ghwebhook_pb.NewRegistrationServiceClient(conn)
+		}
+
+		go RunWorkerLoop(context.Background(), pClient, ghClient, regClient, 1*time.Hour)
 	}
 
 	return grpcServer.Serve(lis)
 }
+

@@ -6,13 +6,16 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
 	pstore_client "github.com/brotherlogic/pstore/client"
 	pb "github.com/brotherlogic/seraphine/proto"
+	ghwebhook_pb "github.com/brotherlogic/ghwebhook/proto/ghwebhook/v1"
 	"github.com/brotherlogic/seraphine/internal/config"
 	"github.com/brotherlogic/seraphine/internal/github"
+	"google.golang.org/grpc"
 )
 
 type mockHTTPClient struct {
@@ -105,7 +108,7 @@ func TestSyncWorker(t *testing.T) {
 	ghClient := github.NewClient("fake-token", mockHTTP)
 
 	// Run the sync process once
-	err = runSync(ctx, pClient, ghClient)
+	err = runSync(ctx, pClient, ghClient, nil)
 	if err != nil {
 		t.Fatalf("runSync failed: %v", err)
 	}
@@ -127,3 +130,71 @@ func TestSyncWorker(t *testing.T) {
 		t.Errorf("Expected brotherlogic/new-repo to be enrolled, got: %v", state.EnrolledRepositories)
 	}
 }
+
+type mockRegistrationClient struct {
+	ghwebhook_pb.RegistrationServiceClient
+	registered []string
+}
+
+func (m *mockRegistrationClient) Register(ctx context.Context, in *ghwebhook_pb.RegistrationRequest, opts ...grpc.CallOption) (*ghwebhook_pb.RegistrationResponse, error) {
+	m.registered = append(m.registered, in.GetRepoFullName())
+	return &ghwebhook_pb.RegistrationResponse{Success: true}, nil
+}
+
+func TestWebhookServerRegistration(t *testing.T) {
+	grpcServer := grpc.NewServer()
+	webhookServer := NewWebhookServer(nil)
+	ghwebhook_pb.RegisterWebhookHandlerServer(grpcServer, webhookServer)
+
+	info := grpcServer.GetServiceInfo()
+	if _, ok := info["ghwebhook.v1.WebhookHandler"]; !ok {
+		t.Errorf("Expected ghwebhook.v1.WebhookHandler to be registered, got services: %v", info)
+	}
+}
+
+func TestSyncWorkerWebhookRegistration(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	pClient := pstore_client.GetTestClient()
+	initialState := &pb.ServerState{
+		EnrolledRepositories: []string{"brotherlogic/repo1", "brotherlogic/repo2"},
+	}
+	if err := config.WriteServerState(ctx, pClient, initialState); err != nil {
+		t.Fatalf("Failed to write initial state: %v", err)
+	}
+
+	mockHTTP := &mockHTTPClient{
+		doFunc: func(req *http.Request) (*http.Response, error) {
+			if req.Method == "GET" && req.URL.Path == "/user/repository_invitations" {
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					Body:       io.NopCloser(bytes.NewReader([]byte(`[]`))),
+				}, nil
+			}
+			if req.Method == "POST" && strings.HasSuffix(req.URL.Path, "/rulesets") {
+				return &http.Response{
+					StatusCode: http.StatusCreated,
+					Body:       io.NopCloser(bytes.NewReader([]byte(`{}`))),
+				}, nil
+			}
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       io.NopCloser(bytes.NewReader([]byte(`{}`))),
+			}, nil
+		},
+	}
+
+	ghClient := github.NewClient("fake-token", mockHTTP)
+	mockReg := &mockRegistrationClient{}
+
+	err := runSync(ctx, pClient, ghClient, mockReg)
+	if err != nil {
+		t.Fatalf("runSync failed: %v", err)
+	}
+
+	if len(mockReg.registered) != 2 {
+		t.Fatalf("Expected 2 registered repos, got %d: %v", len(mockReg.registered), mockReg.registered)
+	}
+}
+
