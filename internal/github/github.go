@@ -70,6 +70,7 @@ type Client interface {
 	AcceptRepositoryInvitation(ctx context.Context, invitationID int64) error
 	CreateRuleset(ctx context.Context, owner, repo string, ruleset *RulesetRequest) error
 	CreateIssue(ctx context.Context, owner, repo string, title, body string, labels []string) (*IssueResponse, error)
+	IsCollaborator(ctx context.Context, owner, repo, user string) (bool, error)
 }
 
 type HTTPClient interface {
@@ -201,4 +202,23 @@ func (c *githubClient) CreateIssue(ctx context.Context, owner, repo string, titl
 	}
 
 	return &issueResp, nil
+}
+
+func (c *githubClient) IsCollaborator(ctx context.Context, owner, repo, user string) (bool, error) {
+	path := fmt.Sprintf("/repos/%s/%s/collaborators/%s", owner, repo, user)
+	resp, err := c.doRequest(ctx, http.MethodGet, path, nil)
+	if err != nil {
+		return false, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNoContent || resp.StatusCode == http.StatusOK {
+		return true, nil
+	}
+	if resp.StatusCode == http.StatusNotFound {
+		return false, nil
+	}
+
+	bodyBytes, _ := io.ReadAll(resp.Body)
+	return false, fmt.Errorf("failed to check collaborator status for user %s in %s/%s, status: %d, body: %s", user, owner, repo, resp.StatusCode, string(bodyBytes))
 }
