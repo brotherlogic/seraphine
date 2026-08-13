@@ -31,6 +31,10 @@ We use automated workflows configured in the `.github/workflows/` directory to m
 - **Issue Closer**: Automatically runs periodically (or manually) to close resolved issues based on the workflow lifecycle.
 - **Assign Reviewer**: Automatically assigns `brotherlogic` as a reviewer once status checks (`Validate PR`) have passed.
 
+### Webhook Server
+
+Seraphine includes a `WebhookServer` implementation handling gRPC webhook events from `ghwebhook` (`ghwebhook_pb.WebhookHandlerServer`). Incoming `pull_request` events (e.g. `opened` action) are validated, filtered against repository collaborator eligibility (`brotherlogicreviewer@gmail.com`), and logged for PR tracking.
+
 ## Feature planning
 
 To build out a new feature we either create an issue with a broadly defined statement or label an existing feature request under 'seraphine-feature'.
