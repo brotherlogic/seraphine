@@ -45,7 +45,14 @@ message ProjectConfig {
   string version = 2;
 }
 
+message PRContainer {
+  string repo = 1;
+  int32 pr_number = 2;
+  string container_id = 3;
+}
+
 message ServerState {
   repeated string enrolled_repositories = 1;
+  repeated PRContainer pr_containers = 2;
 }
 
