@@ -143,7 +143,7 @@ func (m *mockRegistrationClient) Register(ctx context.Context, in *ghwebhook_pb.
 
 func TestWebhookServerRegistration(t *testing.T) {
 	grpcServer := grpc.NewServer()
-	webhookServer := NewWebhookServer(nil)
+	webhookServer := NewWebhookServer(nil, nil, nil)
 	ghwebhook_pb.RegisterWebhookHandlerServer(grpcServer, webhookServer)
 
 	info := grpcServer.GetServiceInfo()

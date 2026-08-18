@@ -177,7 +177,7 @@ func Run(port string) error {
 	if token != "" {
 		ghClient = github.NewClient(token, nil)
 	}
-	webhookServer := NewWebhookServer(ghClient)
+	webhookServer := NewWebhookServer(ghClient, nil, nil)
 	ghwebhook_pb.RegisterWebhookHandlerServer(grpcServer, webhookServer)
 
 	if token == "" {
