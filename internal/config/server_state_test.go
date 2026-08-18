@@ -71,3 +71,70 @@ func TestReadWriteServerState(t *testing.T) {
 		t.Errorf("Mismatch in repositories: %v", state2.GetEnrolledRepositories())
 	}
 }
+
+func TestPRContainerHelpers(t *testing.T) {
+	state := &pb.ServerState{}
+
+	// Initially finding container should return nil
+	if c := FindPRContainer(state, "owner/repo", 10); c != nil {
+		t.Errorf("Expected nil, got %v", c)
+	}
+
+	// Add a PR container
+	AddPRContainer(state, &pb.PRContainer{
+		Repo:        "owner/repo",
+		PrNumber:    10,
+		ContainerId: "container-123",
+	})
+
+	if len(state.GetPrContainers()) != 1 {
+		t.Fatalf("Expected 1 PR container, got %d", len(state.GetPrContainers()))
+	}
+
+	// Find the added container
+	c := FindPRContainer(state, "owner/repo", 10)
+	if c == nil {
+		t.Fatalf("Expected container, got nil")
+	}
+	if c.GetContainerId() != "container-123" {
+		t.Errorf("Expected container_id 'container-123', got '%s'", c.GetContainerId())
+	}
+
+	// Finding non-existent repo or PR number should return nil
+	if FindPRContainer(state, "owner/other", 10) != nil {
+		t.Errorf("Expected nil for different repo")
+	}
+	if FindPRContainer(state, "owner/repo", 99) != nil {
+		t.Errorf("Expected nil for different PR number")
+	}
+
+	// Updating existing container should overwrite instead of duplicate
+	AddPRContainer(state, &pb.PRContainer{
+		Repo:        "owner/repo",
+		PrNumber:    10,
+		ContainerId: "container-456",
+	})
+
+	if len(state.GetPrContainers()) != 1 {
+		t.Fatalf("Expected 1 PR container after update, got %d", len(state.GetPrContainers()))
+	}
+	if c := FindPRContainer(state, "owner/repo", 10); c == nil || c.GetContainerId() != "container-456" {
+		t.Errorf("Expected updated container_id 'container-456', got %v", c)
+	}
+
+	// Remove container
+	RemovePRContainer(state, "owner/repo", 10)
+	if len(state.GetPrContainers()) != 0 {
+		t.Errorf("Expected 0 PR containers after removal, got %d", len(state.GetPrContainers()))
+	}
+	if FindPRContainer(state, "owner/repo", 10) != nil {
+		t.Errorf("Expected nil after removal")
+	}
+
+	// Removing non-existent container should be a no-op
+	RemovePRContainer(state, "owner/repo", 10)
+	if len(state.GetPrContainers()) != 0 {
+		t.Errorf("Expected 0 PR containers after removing non-existent record, got %d", len(state.GetPrContainers()))
+	}
+}
+
