@@ -11,6 +11,7 @@ import (
 
 	pstore_client "github.com/brotherlogic/pstore/client"
 	ghwebhook_pb "github.com/brotherlogic/ghwebhook/proto/ghwebhook/v1"
+	manager_pb "github.com/brotherlogic/devcontainer-manager/proto"
 	"github.com/brotherlogic/seraphine/internal/config"
 	"github.com/brotherlogic/seraphine/internal/github"
 	pb "github.com/brotherlogic/seraphine/proto"
@@ -161,6 +162,14 @@ func RunWorkerLoop(ctx context.Context, pClient pstore_client.PStoreClient, ghCl
 	}
 }
 
+func getDevcontainerAddress() string {
+	addr := os.Getenv("DEVCONTAINER_MANAGER_ADDRESS")
+	if addr == "" {
+		return "devcontainer-manager.devcontainer-manager.svc.cluster.local:8080"
+	}
+	return addr
+}
+
 func Run(port string) error {
 	lis, err := net.Listen("tcp", port)
 	if err != nil {
@@ -177,17 +186,31 @@ func Run(port string) error {
 	if token != "" {
 		ghClient = github.NewClient(token, nil)
 	}
-	webhookServer := NewWebhookServer(ghClient, nil, nil)
+
+	devAddr := getDevcontainerAddress()
+	var devClient manager_pb.ManagerServiceClient
+	devConn, err := grpc.Dial(devAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Printf("failed to dial devcontainer manager at %s: %v", devAddr, err)
+	} else if devConn != nil {
+		devClient = manager_pb.NewManagerServiceClient(devConn)
+	}
+
+	var pClient pstore_client.PStoreClient
+	if token != "" {
+		var pErr error
+		pClient, pErr = pstore_client.GetClient()
+		if pErr != nil {
+			return fmt.Errorf("failed to get pstore client: %w", pErr)
+		}
+	}
+
+	webhookServer := NewWebhookServer(ghClient, devClient, pClient)
 	ghwebhook_pb.RegisterWebhookHandlerServer(grpcServer, webhookServer)
 
 	if token == "" {
 		log.Printf("GH_TOKEN is not set, skipping background worker")
 	} else {
-		pClient, err := pstore_client.GetClient()
-		if err != nil {
-			return fmt.Errorf("failed to get pstore client: %w", err)
-		}
-
 		var regClient ghwebhook_pb.RegistrationServiceClient
 		conn, err := grpc.Dial("ghwebhook.ghwebhook.svc.cluster.local:8080", grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err == nil && conn != nil {
@@ -199,4 +222,5 @@ func Run(port string) error {
 
 	return grpcServer.Serve(lis)
 }
+
 
