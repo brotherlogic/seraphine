@@ -30,6 +30,8 @@ During the upgrade process (`seraphine upgrade`), the CLI automatically reconcil
 We use automated workflows configured in the `.github/workflows/` directory to manage our processes:
 - **Issue Closer**: Automatically runs periodically (or manually) to close resolved issues based on the workflow lifecycle.
 - **Assign Reviewer**: Automatically assigns `brotherlogic` as a reviewer once status checks (`Validate PR`) have passed.
+- **Bump Version and Push Tag**: Automatically tags releases upon pushes to `main`.
+- **Build and Push to Docker**: Builds multi-arch container images and pushes them to DockerHub when a release tag is pushed.
 
 ### Webhook Server
 
