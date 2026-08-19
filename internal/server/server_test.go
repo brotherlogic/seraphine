@@ -198,3 +198,28 @@ func TestSyncWorkerWebhookRegistration(t *testing.T) {
 	}
 }
 
+func TestDevcontainerManagerAddressAndWiring(t *testing.T) {
+	// Test default address
+	t.Setenv("DEVCONTAINER_MANAGER_ADDRESS", "")
+	addr := getDevcontainerAddress()
+	expectedDefault := "devcontainer-manager.devcontainer-manager.svc.cluster.local:8080"
+	if addr != expectedDefault {
+		t.Errorf("Expected default address %s, got %s", expectedDefault, addr)
+	}
+
+	// Test custom env address
+	customAddr := "custom-devcontainer:9090"
+	t.Setenv("DEVCONTAINER_MANAGER_ADDRESS", customAddr)
+	if getDevcontainerAddress() != customAddr {
+		t.Errorf("Expected custom address %s, got %s", customAddr, getDevcontainerAddress())
+	}
+
+	// Test wiring into WebhookServer
+	mockDevClient := &mockDevcontainerClient{}
+	ws := NewWebhookServer(nil, mockDevClient, nil)
+	if ws.devcontainerClient != mockDevClient {
+		t.Errorf("Expected devcontainerClient to be wired into WebhookServer")
+	}
+}
+
+
