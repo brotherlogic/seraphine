@@ -13,6 +13,7 @@ import (
 	ghwebhook_pb "github.com/brotherlogic/ghwebhook/proto/ghwebhook/v1"
 	manager_pb "github.com/brotherlogic/devcontainer-manager/proto"
 	"github.com/brotherlogic/seraphine/internal/config"
+	"github.com/brotherlogic/seraphine/internal/dashboard"
 	"github.com/brotherlogic/seraphine/internal/github"
 	pb "github.com/brotherlogic/seraphine/proto"
 	"google.golang.org/grpc"
@@ -23,6 +24,22 @@ import (
 
 type seraphineServer struct {
 	pb.UnimplementedSeraphineServiceServer
+	DashboardService dashboard.Service
+}
+
+// NewSeraphineServer creates a new Seraphine server instance with the given dashboard service.
+func NewSeraphineServer(dashboardService dashboard.Service) *seraphineServer {
+	return &seraphineServer{
+		DashboardService: dashboardService,
+	}
+}
+
+// GetDashboardService returns the configured dashboard service instance.
+func (s *seraphineServer) GetDashboardService() dashboard.Service {
+	if s == nil {
+		return nil
+	}
+	return s.DashboardService
 }
 
 func (s *seraphineServer) GetProjectState(ctx context.Context, req *pb.GetProjectStateRequest) (*pb.GetProjectStateResponse, error) {
@@ -177,8 +194,6 @@ func Run(port string) error {
 	}
 
 	grpcServer := grpc.NewServer()
-	pb.RegisterSeraphineServiceServer(grpcServer, &seraphineServer{})
-
 	fmt.Printf("Starting Seraphine gRPC server on %s...\n", port)
 
 	token := os.Getenv("GH_TOKEN")
@@ -205,6 +220,10 @@ func Run(port string) error {
 		}
 	}
 
+	dashboardService := dashboard.NewService(ghClient, devClient, pClient)
+	seraphineServer := NewSeraphineServer(dashboardService)
+	pb.RegisterSeraphineServiceServer(grpcServer, seraphineServer)
+
 	webhookServer := NewWebhookServer(ghClient, devClient, pClient)
 	ghwebhook_pb.RegisterWebhookHandlerServer(grpcServer, webhookServer)
 
@@ -218,6 +237,7 @@ func Run(port string) error {
 		}
 
 		go RunWorkerLoop(context.Background(), pClient, ghClient, regClient, 1*time.Hour)
+		go dashboardService.RunWorker(context.Background(), 1*time.Minute)
 	}
 
 	return grpcServer.Serve(lis)

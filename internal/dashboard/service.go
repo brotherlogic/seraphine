@@ -13,9 +13,14 @@ import (
 	pstore_client "github.com/brotherlogic/pstore/client"
 	"github.com/brotherlogic/seraphine/internal/config"
 	"github.com/brotherlogic/seraphine/internal/github"
-	"github.com/brotherlogic/seraphine/internal/server"
 	pb "github.com/brotherlogic/seraphine/proto"
+	"google.golang.org/grpc"
 )
+
+// DevcontainerClient interface required by dashboard to list containers.
+type DevcontainerClient interface {
+	List(ctx context.Context, in *manager_pb.ListRequest, opts ...grpc.CallOption) (*manager_pb.ListResponse, error)
+}
 
 // Option allows configuring optional parameters for dashboardService.
 type Option func(*dashboardService)
@@ -42,14 +47,14 @@ type dashboardService struct {
 	mu           sync.RWMutex
 	state        *DashboardState
 	ghClient     github.Client
-	devClient    server.DevcontainerClient
+	devClient    DevcontainerClient
 	pstoreClient pstore_client.PStoreClient
 	workers      int
 	clock        func() time.Time
 }
 
 // NewService creates a new dashboard aggregation Service instance.
-func NewService(ghClient github.Client, devClient server.DevcontainerClient, pstoreClient pstore_client.PStoreClient, opts ...Option) Service {
+func NewService(ghClient github.Client, devClient DevcontainerClient, pstoreClient pstore_client.PStoreClient, opts ...Option) Service {
 	s := &dashboardService{
 		ghClient:     ghClient,
 		devClient:    devClient,

@@ -14,6 +14,7 @@ import (
 	pb "github.com/brotherlogic/seraphine/proto"
 	ghwebhook_pb "github.com/brotherlogic/ghwebhook/proto/ghwebhook/v1"
 	"github.com/brotherlogic/seraphine/internal/config"
+	"github.com/brotherlogic/seraphine/internal/dashboard"
 	"github.com/brotherlogic/seraphine/internal/github"
 	"google.golang.org/grpc"
 )
@@ -219,6 +220,77 @@ func TestDevcontainerManagerAddressAndWiring(t *testing.T) {
 	ws := NewWebhookServer(nil, mockDevClient, nil)
 	if ws.devcontainerClient != mockDevClient {
 		t.Errorf("Expected devcontainerClient to be wired into WebhookServer")
+	}
+}
+
+func TestSeraphineServer_DashboardServiceExposure(t *testing.T) {
+	pClient := pstore_client.GetTestClient()
+	dashService := dashboard.NewService(nil, nil, pClient)
+
+	srv := NewSeraphineServer(dashService)
+	if srv == nil {
+		t.Fatalf("Expected non-nil SeraphineServer")
+	}
+
+	if srv.GetDashboardService() != dashService {
+		t.Errorf("Expected GetDashboardService() to return dashService instance")
+	}
+
+	if srv.DashboardService != dashService {
+		t.Errorf("Expected DashboardService field to match dashService instance")
+	}
+}
+
+type mockDashboardService struct {
+	syncCount int
+	runCalled bool
+}
+
+func (m *mockDashboardService) GetDashboardState(ctx context.Context) (*dashboard.DashboardState, error) {
+	return &dashboard.DashboardState{}, nil
+}
+
+func (m *mockDashboardService) RunWorker(ctx context.Context, interval time.Duration) {
+	m.runCalled = true
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	m.syncCount++
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			m.syncCount++
+		}
+	}
+}
+
+func TestDashboardWorkerLifecycle(t *testing.T) {
+	mockDash := &mockDashboardService{}
+	ctx, cancel := context.WithCancel(context.Background())
+
+	workerDone := make(chan struct{})
+	go func() {
+		mockDash.RunWorker(ctx, 10*time.Millisecond)
+		close(workerDone)
+	}()
+
+	time.Sleep(30 * time.Millisecond)
+	cancel()
+
+	select {
+	case <-workerDone:
+		// Succeeded
+	case <-time.After(1 * time.Second):
+		t.Fatalf("Worker did not exit within timeout after context cancellation")
+	}
+
+	if !mockDash.runCalled {
+		t.Errorf("Expected RunWorker to have been called")
+	}
+	if mockDash.syncCount < 2 {
+		t.Errorf("Expected at least 2 sync executions, got %d", mockDash.syncCount)
 	}
 }
 
