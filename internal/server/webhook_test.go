@@ -56,6 +56,7 @@ func (m *mockGHClient) GetCommitCheckStatus(ctx context.Context, owner, repo, re
 type mockDevcontainerClient struct {
 	upFunc   func(ctx context.Context, in *manager_pb.UpRequest, opts ...grpc.CallOption) (*manager_pb.UpResponse, error)
 	downFunc func(ctx context.Context, in *manager_pb.DownRequest, opts ...grpc.CallOption) (*manager_pb.DownResponse, error)
+	listFunc func(ctx context.Context, in *manager_pb.ListRequest, opts ...grpc.CallOption) (*manager_pb.ListResponse, error)
 }
 
 func (m *mockDevcontainerClient) Up(ctx context.Context, in *manager_pb.UpRequest, opts ...grpc.CallOption) (*manager_pb.UpResponse, error) {
@@ -70,6 +71,13 @@ func (m *mockDevcontainerClient) Down(ctx context.Context, in *manager_pb.DownRe
 		return m.downFunc(ctx, in, opts...)
 	}
 	return &manager_pb.DownResponse{}, nil
+}
+
+func (m *mockDevcontainerClient) List(ctx context.Context, in *manager_pb.ListRequest, opts ...grpc.CallOption) (*manager_pb.ListResponse, error) {
+	if m.listFunc != nil {
+		return m.listFunc(ctx, in, opts...)
+	}
+	return &manager_pb.ListResponse{}, nil
 }
 
 func TestReceiveWebhook_OpenedPROfEligibleRepo(t *testing.T) {
@@ -415,3 +423,24 @@ func TestReceiveWebhook_NonEligibleRepo(t *testing.T) {
 	}
 }
 
+func TestDevcontainerClient_List(t *testing.T) {
+	mockDev := &mockDevcontainerClient{
+		listFunc: func(ctx context.Context, in *manager_pb.ListRequest, opts ...grpc.CallOption) (*manager_pb.ListResponse, error) {
+			return &manager_pb.ListResponse{
+				Configs: []*manager_pb.DevcontainerConfig{
+					{
+						Id: "test-container-1",
+					},
+				},
+			}, nil
+		},
+	}
+	var client DevcontainerClient = mockDev
+	resp, err := client.List(context.Background(), &manager_pb.ListRequest{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(resp.GetConfigs()) != 1 || resp.GetConfigs()[0].GetId() != "test-container-1" {
+		t.Fatalf("unexpected response: %v", resp)
+	}
+}
