@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 )
 
 type RepositoryInvitation struct {
@@ -23,6 +24,55 @@ type Repository struct {
 
 type Owner struct {
 	Login string `json:"login"`
+}
+
+type User struct {
+	Login string `json:"login"`
+}
+
+type PullRequestBranch struct {
+	SHA string `json:"sha"`
+	Ref string `json:"ref"`
+}
+
+type PullRequest struct {
+	ID      int64             `json:"id"`
+	Number  int               `json:"number"`
+	Title   string            `json:"title"`
+	State   string            `json:"state"`
+	User    User              `json:"user"`
+	Head    PullRequestBranch `json:"head"`
+	Base    PullRequestBranch `json:"base"`
+	HTMLURL string            `json:"html_url"`
+}
+
+type PullRequestDetail struct {
+	PullRequest
+	Commits        int `json:"commits"`
+	Comments       int `json:"comments"`
+	ReviewComments int `json:"review_comments"`
+}
+
+type CheckStatus string
+
+const (
+	CheckStatusSuccess CheckStatus = "SUCCESS"
+	CheckStatusPending CheckStatus = "PENDING"
+	CheckStatusFailure CheckStatus = "FAILURE"
+	CheckStatusUnknown CheckStatus = "UNKNOWN"
+)
+
+type CheckRun struct {
+	ID         int64  `json:"id"`
+	Name       string `json:"name"`
+	HeadSHA    string `json:"head_sha"`
+	Status     string `json:"status"`
+	Conclusion string `json:"conclusion"`
+}
+
+type CheckRunsResponse struct {
+	TotalCount int        `json:"total_count"`
+	CheckRuns  []CheckRun `json:"check_runs"`
 }
 
 type RulesetRequest struct {
@@ -71,6 +121,9 @@ type Client interface {
 	CreateRuleset(ctx context.Context, owner, repo string, ruleset *RulesetRequest) error
 	CreateIssue(ctx context.Context, owner, repo string, title, body string, labels []string) (*IssueResponse, error)
 	IsCollaborator(ctx context.Context, owner, repo, user string) (bool, error)
+	ListOpenPullRequests(ctx context.Context, owner, repo string) ([]*PullRequest, error)
+	GetPullRequestDetails(ctx context.Context, owner, repo string, number int) (*PullRequestDetail, error)
+	GetCommitCheckStatus(ctx context.Context, owner, repo, ref string) (CheckStatus, error)
 }
 
 type HTTPClient interface {
@@ -222,3 +275,93 @@ func (c *githubClient) IsCollaborator(ctx context.Context, owner, repo, user str
 	bodyBytes, _ := io.ReadAll(resp.Body)
 	return false, fmt.Errorf("failed to check collaborator status for user %s in %s/%s, status: %d, body: %s", user, owner, repo, resp.StatusCode, string(bodyBytes))
 }
+
+func (c *githubClient) ListOpenPullRequests(ctx context.Context, owner, repo string) ([]*PullRequest, error) {
+	path := fmt.Sprintf("/repos/%s/%s/pulls?state=open", owner, repo)
+	resp, err := c.doRequest(ctx, http.MethodGet, path, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("failed to list open pull requests for %s/%s, status: %d, body: %s", owner, repo, resp.StatusCode, string(bodyBytes))
+	}
+
+	var prs []*PullRequest
+	if err := json.NewDecoder(resp.Body).Decode(&prs); err != nil {
+		return nil, fmt.Errorf("failed to decode pull requests: %w", err)
+	}
+
+	return prs, nil
+}
+
+func (c *githubClient) GetPullRequestDetails(ctx context.Context, owner, repo string, number int) (*PullRequestDetail, error) {
+	path := fmt.Sprintf("/repos/%s/%s/pulls/%d", owner, repo, number)
+	resp, err := c.doRequest(ctx, http.MethodGet, path, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("failed to get pull request details for %s/%s#%d, status: %d, body: %s", owner, repo, number, resp.StatusCode, string(bodyBytes))
+	}
+
+	var prDetail PullRequestDetail
+	if err := json.NewDecoder(resp.Body).Decode(&prDetail); err != nil {
+		return nil, fmt.Errorf("failed to decode pull request details: %w", err)
+	}
+
+	return &prDetail, nil
+}
+
+func evaluateCheckStatus(runs []CheckRun) CheckStatus {
+	if len(runs) == 0 {
+		return CheckStatusUnknown
+	}
+
+	hasPending := false
+	for _, run := range runs {
+		status := strings.ToLower(run.Status)
+		conclusion := strings.ToLower(run.Conclusion)
+
+		if conclusion == "failure" || conclusion == "timed_out" || conclusion == "cancelled" || conclusion == "action_required" || status == "failure" || status == "timed_out" {
+			return CheckStatusFailure
+		}
+
+		if status == "in_progress" || status == "queued" || status == "waiting" || status == "pending" || (status != "completed" && conclusion == "") {
+			hasPending = true
+		}
+	}
+
+	if hasPending {
+		return CheckStatusPending
+	}
+
+	return CheckStatusSuccess
+}
+
+func (c *githubClient) GetCommitCheckStatus(ctx context.Context, owner, repo, ref string) (CheckStatus, error) {
+	path := fmt.Sprintf("/repos/%s/%s/commits/%s/check-runs", owner, repo, ref)
+	resp, err := c.doRequest(ctx, http.MethodGet, path, nil)
+	if err != nil {
+		return CheckStatusUnknown, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return CheckStatusUnknown, fmt.Errorf("failed to get commit check runs for %s/%s ref %s, status: %d, body: %s", owner, repo, ref, resp.StatusCode, string(bodyBytes))
+	}
+
+	var checkRunsResp CheckRunsResponse
+	if err := json.NewDecoder(resp.Body).Decode(&checkRunsResp); err != nil {
+		return CheckStatusUnknown, fmt.Errorf("failed to decode check runs response: %w", err)
+	}
+
+	return evaluateCheckStatus(checkRunsResp.CheckRuns), nil
+}
+

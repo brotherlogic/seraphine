@@ -41,6 +41,18 @@ func (m *mockGHClient) IsCollaborator(ctx context.Context, owner, repo, user str
 	return false, nil
 }
 
+func (m *mockGHClient) ListOpenPullRequests(ctx context.Context, owner, repo string) ([]*github.PullRequest, error) {
+	return nil, nil
+}
+
+func (m *mockGHClient) GetPullRequestDetails(ctx context.Context, owner, repo string, number int) (*github.PullRequestDetail, error) {
+	return nil, nil
+}
+
+func (m *mockGHClient) GetCommitCheckStatus(ctx context.Context, owner, repo, ref string) (github.CheckStatus, error) {
+	return github.CheckStatusUnknown, nil
+}
+
 type mockDevcontainerClient struct {
 	upFunc   func(ctx context.Context, in *manager_pb.UpRequest, opts ...grpc.CallOption) (*manager_pb.UpResponse, error)
 	downFunc func(ctx context.Context, in *manager_pb.DownRequest, opts ...grpc.CallOption) (*manager_pb.DownResponse, error)
