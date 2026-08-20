@@ -18,6 +18,7 @@ import (
 type DevcontainerClient interface {
 	Up(ctx context.Context, in *manager_pb.UpRequest, opts ...grpc.CallOption) (*manager_pb.UpResponse, error)
 	Down(ctx context.Context, in *manager_pb.DownRequest, opts ...grpc.CallOption) (*manager_pb.DownResponse, error)
+	List(ctx context.Context, in *manager_pb.ListRequest, opts ...grpc.CallOption) (*manager_pb.ListResponse, error)
 }
 
 // WebhookServer implements ghwebhook_pb.WebhookHandlerServer to handle incoming webhook events.
