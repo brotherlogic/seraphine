@@ -2,19 +2,24 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net"
 	"os"
+	"os/signal"
 	"strings"
+	"sync"
+	"syscall"
 	"time"
 
-	pstore_client "github.com/brotherlogic/pstore/client"
-	ghwebhook_pb "github.com/brotherlogic/ghwebhook/proto/ghwebhook/v1"
 	manager_pb "github.com/brotherlogic/devcontainer-manager/proto"
+	ghwebhook_pb "github.com/brotherlogic/ghwebhook/proto/ghwebhook/v1"
+	pstore_client "github.com/brotherlogic/pstore/client"
 	"github.com/brotherlogic/seraphine/internal/config"
 	"github.com/brotherlogic/seraphine/internal/dashboard"
 	"github.com/brotherlogic/seraphine/internal/github"
+	"github.com/brotherlogic/seraphine/internal/web"
 	pb "github.com/brotherlogic/seraphine/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -187,14 +192,36 @@ func getDevcontainerAddress() string {
 	return addr
 }
 
-func Run(port string) error {
-	lis, err := net.Listen("tcp", port)
-	if err != nil {
-		return fmt.Errorf("failed to listen on port %s: %w", port, err)
+func getHTTPPort(httpPorts ...string) string {
+	var port string
+	if len(httpPorts) > 0 && strings.TrimSpace(httpPorts[0]) != "" {
+		port = strings.TrimSpace(httpPorts[0])
+	} else if envPort := strings.TrimSpace(os.Getenv("HTTP_PORT")); envPort != "" {
+		port = envPort
+	} else {
+		port = ":8080"
 	}
 
+	if !strings.Contains(port, ":") {
+		port = ":" + port
+	}
+	return port
+}
+
+func RunWithContext(ctx context.Context, grpcPort string, httpPorts ...string) error {
+	if !strings.Contains(grpcPort, ":") {
+		grpcPort = ":" + grpcPort
+	}
+	httpPort := getHTTPPort(httpPorts...)
+
+	lis, err := net.Listen("tcp", grpcPort)
+	if err != nil {
+		return fmt.Errorf("failed to listen on port %s: %w", grpcPort, err)
+	}
+	defer lis.Close()
+
 	grpcServer := grpc.NewServer()
-	fmt.Printf("Starting Seraphine gRPC server on %s...\n", port)
+	fmt.Printf("Starting Seraphine gRPC server on %s and HTTP server on %s...\n", grpcPort, httpPort)
 
 	token := os.Getenv("GH_TOKEN")
 	var ghClient github.Client
@@ -209,6 +236,7 @@ func Run(port string) error {
 		log.Printf("failed to dial devcontainer manager at %s: %v", devAddr, err)
 	} else if devConn != nil {
 		devClient = manager_pb.NewManagerServiceClient(devConn)
+		defer devConn.Close()
 	}
 
 	var pClient pstore_client.PStoreClient
@@ -227,6 +255,9 @@ func Run(port string) error {
 	webhookServer := NewWebhookServer(ghClient, devClient, pClient)
 	ghwebhook_pb.RegisterWebhookHandlerServer(grpcServer, webhookServer)
 
+	gCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	if token == "" {
 		log.Printf("GH_TOKEN is not set, skipping background worker")
 	} else {
@@ -234,13 +265,60 @@ func Run(port string) error {
 		conn, err := grpc.Dial("ghwebhook.ghwebhook.svc.cluster.local:8080", grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err == nil && conn != nil {
 			regClient = ghwebhook_pb.NewRegistrationServiceClient(conn)
+			defer conn.Close()
 		}
 
-		go RunWorkerLoop(context.Background(), pClient, ghClient, regClient, 1*time.Hour)
-		go dashboardService.RunWorker(context.Background(), 1*time.Minute)
+		go RunWorkerLoop(gCtx, pClient, ghClient, regClient, 1*time.Hour)
+		go dashboardService.RunWorker(gCtx, 1*time.Minute)
 	}
 
-	return grpcServer.Serve(lis)
+	var wg sync.WaitGroup
+	var httpErr, grpcErr error
+
+	// Run HTTP server concurrently in background goroutine
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		defer cancel()
+		if err := web.RunHTTPServer(gCtx, httpPort, dashboardService); err != nil && !errors.Is(err, context.Canceled) {
+			httpErr = err
+		}
+	}()
+
+	// Gracefully stop gRPC server on cancellation
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		<-gCtx.Done()
+		grpcServer.GracefulStop()
+	}()
+
+	// Run gRPC server
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		defer cancel()
+		if err := grpcServer.Serve(lis); err != nil {
+			grpcErr = err
+		}
+	}()
+
+	wg.Wait()
+
+	if httpErr != nil {
+		return httpErr
+	}
+	if grpcErr != nil {
+		return grpcErr
+	}
+	return nil
 }
+
+func Run(grpcPort string, httpPorts ...string) error {
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
+	return RunWithContext(ctx, grpcPort, httpPorts...)
+}
+
 
 
