@@ -1,91 +1,159 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { useDashboard } from './hooks/useDashboard';
+import { Header } from './components/Header';
+import { AlertBanner } from './components/AlertBanner';
+import { FilterBar } from './components/FilterBar';
+import { RepoSection } from './components/RepoSection';
+import { EmptyState } from './components/EmptyState';
+import { Loader2, SearchX } from 'lucide-react';
+import type { PRSummary } from './types/dashboard';
 
 export const App: React.FC = () => {
   const { data, loading, error, isRefreshing, lastUpdated, refresh } = useDashboard();
 
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [selectedRepo, setSelectedRepo] = useState<string>('ALL');
+  const [selectedContainerState, setSelectedContainerState] = useState<string>('ALL');
+
+  // Derive unique repositories
+  const repos = useMemo(() => {
+    if (!data?.pull_requests) return [];
+    const set = new Set<string>();
+    data.pull_requests.forEach((pr) => set.add(pr.repo));
+    return Array.from(set).sort();
+  }, [data?.pull_requests]);
+
+  // Client-side filtering and search engine
+  const filteredPRs = useMemo(() => {
+    if (!data?.pull_requests) return [];
+
+    const query = searchQuery.trim().toLowerCase();
+
+    return data.pull_requests.filter((pr: PRSummary) => {
+      // 1. Repository Filter
+      if (selectedRepo !== 'ALL' && pr.repo !== selectedRepo) {
+        return false;
+      }
+
+      // 2. Container State Filter
+      if (
+        selectedContainerState !== 'ALL' &&
+        pr.container_state !== selectedContainerState
+      ) {
+        return false;
+      }
+
+      // 3. Search Query Filter (Title, #Number, Author, Repo)
+      if (query) {
+        const titleMatch = pr.title.toLowerCase().includes(query);
+        const numberMatch =
+          pr.pr_number.toString().includes(query) ||
+          `#${pr.pr_number}`.includes(query);
+        const authorMatch = pr.author.toLowerCase().includes(query);
+        const repoMatch = pr.repo.toLowerCase().includes(query);
+
+        if (!titleMatch && !numberMatch && !authorMatch && !repoMatch) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [data?.pull_requests, selectedRepo, selectedContainerState, searchQuery]);
+
+  // Group filtered PRs by repository
+  const groupedPRs = useMemo(() => {
+    const map = new Map<string, PRSummary[]>();
+    filteredPRs.forEach((pr) => {
+      const list = map.get(pr.repo) || [];
+      list.push(pr);
+      map.set(pr.repo, list);
+    });
+    return map;
+  }, [filteredPRs]);
+
+  const handleResetFilters = () => {
+    setSearchQuery('');
+    setSelectedRepo('ALL');
+    setSelectedContainerState('ALL');
+  };
+
+  const isFiltered =
+    searchQuery !== '' || selectedRepo !== 'ALL' || selectedContainerState !== 'ALL';
+  const totalCount = data?.pull_requests.length ?? 0;
+  const filteredCount = filteredPRs.length;
+
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 p-6">
-      <header className="max-w-7xl mx-auto flex items-center justify-between border-b border-slate-800 pb-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-100 flex items-center gap-2">
-            Seraphine Dashboard
-          </h1>
-          <p className="text-sm text-slate-400">
-            Real-time multi-repository pull requests & devcontainer state
-          </p>
-        </div>
+    <div className="min-h-screen bg-slate-950 text-slate-100 antialiased selection:bg-blue-600 selection:text-white">
+      <div className="px-4 sm:px-6 lg:px-8 py-6">
+        <Header
+          lastUpdated={lastUpdated}
+          loading={loading}
+          isRefreshing={isRefreshing}
+          onRefresh={refresh}
+        />
 
-        <div className="flex items-center gap-4">
-          {lastUpdated && (
-            <span className="text-xs text-slate-400">
-              Last updated: {lastUpdated.toLocaleTimeString()}
-            </span>
-          )}
-          <button
-            onClick={() => refresh()}
-            disabled={loading || isRefreshing}
-            className="px-3 py-1.5 text-sm font-medium bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-200 rounded-lg border border-slate-700 transition"
-          >
-            {isRefreshing ? 'Refreshing...' : 'Refresh'}
-          </button>
-        </div>
-      </header>
+        <main className="max-w-7xl mx-auto">
+          {/* Non-blocking Alert Banner for Backend / Sync Issues */}
+          <AlertBanner
+            error={error}
+            freshness={data?.freshness}
+            onRetry={refresh}
+          />
 
-      <main className="max-w-7xl mx-auto">
-        {loading && (
-          <div className="flex items-center justify-center py-12 text-slate-400">
-            <p>Loading dashboard state...</p>
-          </div>
-        )}
-
-        {error && (
-          <div className="bg-red-950/50 border border-red-800/80 rounded-lg p-4 mb-6 text-red-200 text-sm">
-            <p className="font-semibold">Failed to load dashboard data</p>
-            <p className="text-red-300 mt-1">{error.message}</p>
-          </div>
-        )}
-
-        {!loading && data && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between text-xs text-slate-400">
-              <span>Active Pull Requests: {data.pull_requests.length}</span>
-              <span>
-                Sync status: {data.freshness.is_stale ? 'Stale' : 'Healthy'}
-              </span>
+          {/* Initial Loading Spinner */}
+          {loading && !data && (
+            <div className="flex flex-col items-center justify-center py-24 text-slate-400 gap-3">
+              <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+              <p className="text-sm font-medium">Loading dashboard state...</p>
             </div>
+          )}
 
-            {data.pull_requests.length === 0 ? (
-              <div className="bg-slate-800/40 border border-slate-800 rounded-lg p-8 text-center text-slate-400">
-                No active pull requests tracked.
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {data.pull_requests.map((pr) => (
-                  <div
-                    key={`${pr.repo}#${pr.pr_number}`}
-                    className="bg-slate-800/60 border border-slate-700/60 rounded-lg p-4 space-y-2"
-                  >
-                    <div className="flex items-center justify-between text-xs text-slate-400">
-                      <span className="font-mono">{pr.repo}</span>
-                      <span>#{pr.pr_number}</span>
-                    </div>
-                    <h3 className="font-medium text-slate-100 line-clamp-2">
-                      {pr.title}
-                    </h3>
-                    <div className="flex items-center justify-between pt-2 text-xs border-t border-slate-700/40">
-                      <span className="text-slate-400">@{pr.author}</span>
-                      <span className="px-2 py-0.5 rounded bg-slate-700 text-slate-200">
-                        {pr.check_status}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </main>
+          {/* Dashboard Content */}
+          {data && (
+            <>
+              {/* Filter and Search Bar */}
+              <FilterBar
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                selectedRepo={selectedRepo}
+                repos={repos}
+                onRepoChange={setSelectedRepo}
+                selectedContainerState={selectedContainerState}
+                onContainerStateChange={setSelectedContainerState}
+                totalCount={totalCount}
+                filteredCount={filteredCount}
+              />
+
+              {/* Empty States or Repositories List */}
+              {totalCount === 0 ? (
+                <EmptyState
+                  title="No active pull requests tracked"
+                  description="Seraphine is currently not tracking any active pull requests across enrolled repositories."
+                />
+              ) : filteredCount === 0 ? (
+                <EmptyState
+                  title="No matching pull requests"
+                  description="No pull requests match the active search query or filter combination."
+                  icon={<SearchX className="w-8 h-8" aria-hidden="true" />}
+                  onReset={isFiltered ? handleResetFilters : undefined}
+                />
+              ) : (
+                <div className="space-y-4">
+                  {Array.from(groupedPRs.entries()).map(([repoName, prs]) => (
+                    <RepoSection
+                      key={repoName}
+                      repo={repoName}
+                      prs={prs}
+                      defaultExpanded={true}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </main>
+      </div>
     </div>
   );
 };
