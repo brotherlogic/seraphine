@@ -184,12 +184,15 @@ func RunWorkerLoop(ctx context.Context, pClient pstore_client.PStoreClient, ghCl
 	}
 }
 
-func getDevcontainerAddress() string {
-	addr := os.Getenv("DEVCONTAINER_MANAGER_ADDRESS")
-	if addr == "" {
-		return "devcontainer-manager.devcontainer-manager.svc.cluster.local:8080"
+func getDevcontainerAddress(devAddrs ...string) string {
+	if len(devAddrs) > 0 && strings.TrimSpace(devAddrs[0]) != "" {
+		return strings.TrimSpace(devAddrs[0])
 	}
-	return addr
+	addr := strings.TrimSpace(os.Getenv("DEVCONTAINER_MANAGER_ADDRESS"))
+	if addr != "" {
+		return addr
+	}
+	return "devcontainer-manager.devcontainer-manager.svc.cluster.local:8080"
 }
 
 func getHTTPPort(httpPorts ...string) string {
@@ -208,11 +211,18 @@ func getHTTPPort(httpPorts ...string) string {
 	return port
 }
 
-func RunWithContext(ctx context.Context, grpcPort string, httpPorts ...string) error {
+func RunWithContext(ctx context.Context, grpcPort string, args ...string) error {
 	if !strings.Contains(grpcPort, ":") {
 		grpcPort = ":" + grpcPort
 	}
-	httpPort := getHTTPPort(httpPorts...)
+	var httpPortArg, devAddrArg string
+	if len(args) > 0 {
+		httpPortArg = args[0]
+	}
+	if len(args) > 1 {
+		devAddrArg = args[1]
+	}
+	httpPort := getHTTPPort(httpPortArg)
 
 	lis, err := net.Listen("tcp", grpcPort)
 	if err != nil {
@@ -229,7 +239,7 @@ func RunWithContext(ctx context.Context, grpcPort string, httpPorts ...string) e
 		ghClient = github.NewClient(token, nil)
 	}
 
-	devAddr := getDevcontainerAddress()
+	devAddr := getDevcontainerAddress(devAddrArg)
 	var devClient manager_pb.ManagerServiceClient
 	devConn, err := grpc.Dial(devAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
@@ -314,10 +324,10 @@ func RunWithContext(ctx context.Context, grpcPort string, httpPorts ...string) e
 	return nil
 }
 
-func Run(grpcPort string, httpPorts ...string) error {
+func Run(grpcPort string, args ...string) error {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
-	return RunWithContext(ctx, grpcPort, httpPorts...)
+	return RunWithContext(ctx, grpcPort, args...)
 }
 
 
