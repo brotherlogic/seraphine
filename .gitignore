@@ -1,3 +1,6 @@
 *~
 .devcontainer/.env.auth
 .antigravitycli
+node_modules/
+dist/
+web/dist/
