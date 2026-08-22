@@ -2,5 +2,6 @@
 .devcontainer/.env.auth
 .antigravitycli
 node_modules/
-dist/
-web/dist/
+/dist/
+/web/dist/*
+!/web/dist/.gitkeep

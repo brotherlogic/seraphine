@@ -6,6 +6,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -82,6 +83,7 @@ func TestRunHTTPServer_LifecycleAndShutdown(t *testing.T) {
 	}
 
 	// Trigger graceful shutdown
+	client.CloseIdleConnections()
 	cancel()
 
 	select {
@@ -100,6 +102,79 @@ func TestRunHTTPServer_LifecycleAndShutdown(t *testing.T) {
 	}
 }
 
+func TestRunHTTPServer_StaticAssetServing(t *testing.T) {
+	port := getFreePort(t)
+	addr := fmt.Sprintf("127.0.0.1:%d", port)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	dashSvc := &mockServerDashboardService{}
+	serverErrChan := make(chan error, 1)
+
+	go func() {
+		serverErrChan <- RunHTTPServer(ctx, addr, dashSvc)
+	}()
+
+	// Wait for server to start
+	client := &http.Client{Timeout: 500 * time.Millisecond}
+	reqURL := fmt.Sprintf("http://%s/healthz", addr)
+
+	started := false
+	for i := 0; i < 50; i++ {
+		time.Sleep(20 * time.Millisecond)
+		resp, err := client.Get(reqURL)
+		if err == nil {
+			resp.Body.Close()
+			if resp.StatusCode == http.StatusOK {
+				started = true
+				break
+			}
+		}
+	}
+	if !started {
+		t.Fatalf("HTTP server failed to start at %s", reqURL)
+	}
+
+	// Test GET /
+	resp, err := client.Get(fmt.Sprintf("http://%s/", addr))
+	if err != nil {
+		t.Fatalf("GET / failed: %v", err)
+	}
+	body, _ := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("Expected status 200 for GET /, got %d", resp.StatusCode)
+	}
+	if !strings.Contains(string(body), "html") && !strings.Contains(string(body), "DOCTYPE") && !strings.Contains(string(body), "Seraphine") {
+		t.Errorf("Expected HTML response from GET /, got: %s", string(body))
+	}
+
+	// Test GET /index.html
+	resp, err = client.Get(fmt.Sprintf("http://%s/index.html", addr))
+	if err != nil {
+		t.Fatalf("GET /index.html failed: %v", err)
+	}
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("Expected status 200 for GET /index.html, got %d", resp.StatusCode)
+	}
+
+	// Test SPA client-side fallback route (e.g. GET /dashboard/settings)
+	resp, err = client.Get(fmt.Sprintf("http://%s/dashboard/settings", addr))
+	if err != nil {
+		t.Fatalf("GET /dashboard/settings failed: %v", err)
+	}
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("Expected status 200 for SPA route, got %d", resp.StatusCode)
+	}
+
+	client.CloseIdleConnections()
+	cancel()
+	<-serverErrChan
+}
+
 func TestRunHTTPServer_InvalidAddress(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -110,3 +185,5 @@ func TestRunHTTPServer_InvalidAddress(t *testing.T) {
 		t.Errorf("Expected error for invalid address, got nil")
 	}
 }
+
+
