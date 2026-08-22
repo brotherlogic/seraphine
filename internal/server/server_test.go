@@ -220,6 +220,17 @@ func TestDevcontainerManagerAddressAndWiring(t *testing.T) {
 		t.Errorf("Expected custom address %s, got %s", customAddr, getDevcontainerAddress())
 	}
 
+	// Test explicit argument overrides env address
+	explicitAddr := "explicit-devcontainer:9999"
+	if getDevcontainerAddress(explicitAddr) != explicitAddr {
+		t.Errorf("Expected explicit address %s, got %s", explicitAddr, getDevcontainerAddress(explicitAddr))
+	}
+
+	// Test empty explicit argument falls back to env address
+	if getDevcontainerAddress("") != customAddr {
+		t.Errorf("Expected fallback to env address %s, got %s", customAddr, getDevcontainerAddress(""))
+	}
+
 	// Test wiring into WebhookServer
 	mockDevClient := &mockDevcontainerClient{}
 	ws := NewWebhookServer(nil, mockDevClient, nil)
