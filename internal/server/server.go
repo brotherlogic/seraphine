@@ -2,17 +2,24 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net"
 	"os"
+	"os/signal"
 	"strings"
+	"sync"
+	"syscall"
 	"time"
 
-	pstore_client "github.com/brotherlogic/pstore/client"
+	manager_pb "github.com/brotherlogic/devcontainer-manager/proto"
 	ghwebhook_pb "github.com/brotherlogic/ghwebhook/proto/ghwebhook/v1"
+	pstore_client "github.com/brotherlogic/pstore/client"
 	"github.com/brotherlogic/seraphine/internal/config"
+	"github.com/brotherlogic/seraphine/internal/dashboard"
 	"github.com/brotherlogic/seraphine/internal/github"
+	"github.com/brotherlogic/seraphine/internal/web"
 	pb "github.com/brotherlogic/seraphine/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -22,6 +29,22 @@ import (
 
 type seraphineServer struct {
 	pb.UnimplementedSeraphineServiceServer
+	DashboardService dashboard.Service
+}
+
+// NewSeraphineServer creates a new Seraphine server instance with the given dashboard service.
+func NewSeraphineServer(dashboardService dashboard.Service) *seraphineServer {
+	return &seraphineServer{
+		DashboardService: dashboardService,
+	}
+}
+
+// GetDashboardService returns the configured dashboard service instance.
+func (s *seraphineServer) GetDashboardService() dashboard.Service {
+	if s == nil {
+		return nil
+	}
+	return s.DashboardService
 }
 
 func (s *seraphineServer) GetProjectState(ctx context.Context, req *pb.GetProjectStateRequest) (*pb.GetProjectStateResponse, error) {
@@ -161,42 +184,151 @@ func RunWorkerLoop(ctx context.Context, pClient pstore_client.PStoreClient, ghCl
 	}
 }
 
-func Run(port string) error {
-	lis, err := net.Listen("tcp", port)
-	if err != nil {
-		return fmt.Errorf("failed to listen on port %s: %w", port, err)
+func getDevcontainerAddress(devAddrs ...string) string {
+	if len(devAddrs) > 0 && strings.TrimSpace(devAddrs[0]) != "" {
+		return strings.TrimSpace(devAddrs[0])
+	}
+	addr := strings.TrimSpace(os.Getenv("DEVCONTAINER_MANAGER_ADDRESS"))
+	if addr != "" {
+		return addr
+	}
+	return "devcontainer-manager.devcontainer-manager.svc.cluster.local:8080"
+}
+
+func getHTTPPort(httpPorts ...string) string {
+	var port string
+	if len(httpPorts) > 0 && strings.TrimSpace(httpPorts[0]) != "" {
+		port = strings.TrimSpace(httpPorts[0])
+	} else if envPort := strings.TrimSpace(os.Getenv("HTTP_PORT")); envPort != "" {
+		port = envPort
+	} else {
+		port = ":8080"
 	}
 
-	grpcServer := grpc.NewServer()
-	pb.RegisterSeraphineServiceServer(grpcServer, &seraphineServer{})
+	if !strings.Contains(port, ":") {
+		port = ":" + port
+	}
+	return port
+}
 
-	fmt.Printf("Starting Seraphine gRPC server on %s...\n", port)
+func RunWithContext(ctx context.Context, grpcPort string, args ...string) error {
+	if !strings.Contains(grpcPort, ":") {
+		grpcPort = ":" + grpcPort
+	}
+	var httpPortArg, devAddrArg string
+	if len(args) > 0 {
+		httpPortArg = args[0]
+	}
+	if len(args) > 1 {
+		devAddrArg = args[1]
+	}
+	httpPort := getHTTPPort(httpPortArg)
+
+	lis, err := net.Listen("tcp", grpcPort)
+	if err != nil {
+		return fmt.Errorf("failed to listen on port %s: %w", grpcPort, err)
+	}
+	defer lis.Close()
+
+	grpcServer := grpc.NewServer()
+	fmt.Printf("Starting Seraphine gRPC server on %s and HTTP server on %s...\n", grpcPort, httpPort)
 
 	token := os.Getenv("GH_TOKEN")
 	var ghClient github.Client
 	if token != "" {
 		ghClient = github.NewClient(token, nil)
 	}
-	webhookServer := NewWebhookServer(ghClient, nil, nil)
+
+	devAddr := getDevcontainerAddress(devAddrArg)
+	var devClient manager_pb.ManagerServiceClient
+	devConn, err := grpc.Dial(devAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Printf("failed to dial devcontainer manager at %s: %v", devAddr, err)
+	} else if devConn != nil {
+		devClient = manager_pb.NewManagerServiceClient(devConn)
+		defer devConn.Close()
+	}
+
+	var pClient pstore_client.PStoreClient
+	if token != "" {
+		var pErr error
+		pClient, pErr = pstore_client.GetClient()
+		if pErr != nil {
+			return fmt.Errorf("failed to get pstore client: %w", pErr)
+		}
+	}
+
+	dashboardService := dashboard.NewService(ghClient, devClient, pClient)
+	seraphineServer := NewSeraphineServer(dashboardService)
+	pb.RegisterSeraphineServiceServer(grpcServer, seraphineServer)
+
+	webhookServer := NewWebhookServer(ghClient, devClient, pClient)
 	ghwebhook_pb.RegisterWebhookHandlerServer(grpcServer, webhookServer)
+
+	gCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
 
 	if token == "" {
 		log.Printf("GH_TOKEN is not set, skipping background worker")
 	} else {
-		pClient, err := pstore_client.GetClient()
-		if err != nil {
-			return fmt.Errorf("failed to get pstore client: %w", err)
-		}
-
 		var regClient ghwebhook_pb.RegistrationServiceClient
 		conn, err := grpc.Dial("ghwebhook.ghwebhook.svc.cluster.local:8080", grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err == nil && conn != nil {
 			regClient = ghwebhook_pb.NewRegistrationServiceClient(conn)
+			defer conn.Close()
 		}
 
-		go RunWorkerLoop(context.Background(), pClient, ghClient, regClient, 1*time.Hour)
+		go RunWorkerLoop(gCtx, pClient, ghClient, regClient, 1*time.Hour)
+		go dashboardService.RunWorker(gCtx, 1*time.Minute)
 	}
 
-	return grpcServer.Serve(lis)
+	var wg sync.WaitGroup
+	var httpErr, grpcErr error
+
+	// Run HTTP server concurrently in background goroutine
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		defer cancel()
+		if err := web.RunHTTPServer(gCtx, httpPort, dashboardService); err != nil && !errors.Is(err, context.Canceled) {
+			httpErr = err
+		}
+	}()
+
+	// Gracefully stop gRPC server on cancellation
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		<-gCtx.Done()
+		grpcServer.GracefulStop()
+	}()
+
+	// Run gRPC server
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		defer cancel()
+		if err := grpcServer.Serve(lis); err != nil {
+			grpcErr = err
+		}
+	}()
+
+	wg.Wait()
+
+	if httpErr != nil {
+		return httpErr
+	}
+	if grpcErr != nil {
+		return grpcErr
+	}
+	return nil
 }
+
+func Run(grpcPort string, args ...string) error {
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
+	return RunWithContext(ctx, grpcPort, args...)
+}
+
+
 
