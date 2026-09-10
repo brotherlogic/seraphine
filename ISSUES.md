@@ -45,6 +45,10 @@ When an issue is labeled, refer to the corresponding workflow document under `.a
    - **Label**: `seraphine-bug`
    - **Workflow Guideline**: [seraphine-bug.md](file:///workspaces/seraphine/.agent/workflows/seraphine-bug.md)
 
+8. **Bug analysis**
+   - **Label**: `seraphine-bug-analysis`
+   - **Workflow Guideline**: [seraphine-bug-analysis.md](file:///workspaces/seraphine/.agent/workflows/seraphine-bug-analysis.md)
+
 ---
 
 ## 🛠️ Summary of Expected Label State Transitions
@@ -62,3 +66,4 @@ When an issue is labeled, refer to the corresponding workflow document under `.a
 | **Implementation** | *None* | **Breakdown Issue:** Closed when all child sub-issues are closed (cascading to close Implementation Plan and Parent issues).<br>**Child Sub-Issues:** Labeled with `seraphine-ready-to-implement`. Closed programmatically via PR submission. |
 | **Bug Triage (Simple)** | `seraphine-bug` | *None (Direct fix implemented and PR submitted)* |
 | **Bug Triage (Complex/Failed)** | `seraphine-bug` (Removed) | New issue labeled with `seraphine-needs-requirements` to initiate requirements gathering |
+| **Bug Analysis** | `seraphine-bug-analysis` | *None (Analysis posted to issue; label retained for follow-up conversation)* |

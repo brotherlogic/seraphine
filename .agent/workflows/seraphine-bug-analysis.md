@@ -8,7 +8,7 @@ When a GitHub issue is labeled with `seraphine-bug-analysis`, the AI assistant (
 graph TD
     A[Issue Labeled seraphine-bug-analysis] --> B[1. Research & Code Analysis]
     B --> C[2. Root Cause & Solution Formulation]
-    C --> D[3. Provide Answer & Remove Label]
+    C --> D[3. Provide Answer & Retain Label for Follow-up]
 ```
 
 ---
@@ -27,7 +27,7 @@ Once the code has been analyzed, formulate a complete and structured answer.
 * **Implementation Plan:** Suggest a potential implementation plan or include code snippets illustrating how the bug could be fixed.
 * **Not a Bug:** If the agent determines that the reported "bug" is actually the intended behavior, explain the intended behavior clearly. Leave the issue open for the user to decide whether to update requirements or close the issue.
 
-### 3. Provide Answer & Remove Label
-The final output of this workflow is a detailed response.
+### 3. Provide Answer & Interactive Follow-up
+The final output of this workflow is a detailed response and subsequent interactive conversation.
 * **Post Comment:** Post a detailed comment on the GitHub issue containing the full analysis, root cause, and proposed solutions or explanations. Do not create a pull request or write a separate markdown artifact file.
-* **Label Management:** After successfully posting the answer, remove the `seraphine-bug-analysis` label from the issue to indicate that the analysis is complete.
+* **Label Management & Container Retention:** Do **not** remove the `seraphine-bug-analysis` label after posting the answer. Keeping the label active prevents the container from being terminated, allowing the developer to join the conversation, dig deeper into the analysis, or file follow-up bugs directly within the session.
