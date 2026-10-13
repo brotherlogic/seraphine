@@ -10,7 +10,7 @@ graph TD
     B --> C[2. Perform Pre-Flight Codebase Analysis]
     C --> D[3. Interactive Grilling Session /grill-me]
     D --> E[4. Technical Implementation Plan Formulation]
-    E --> F[5. Post Plan & Create Breakdown Sub-Issue]
+    E --> F[5. Post Plan, Create Breakdown Sub-Issue & Remove Label]
 ```
 
 ---
@@ -48,12 +48,12 @@ Once a shared understanding of technical details is reached, Seraphine compiles 
   4. **Frontend (React) Implementation Details:** Component names, hook usage, routes, CSS design tokens, and styling updates.
   5. **Testing Strategy:** Plan for backend Go tests (`go test -v ./...`), integration verifications, and manual frontend testing steps.
 
-### 5. Post Plan & Create Breakdown Sub-Issue
+### 5. Post Plan, Create Breakdown Sub-Issue & Remove Label
 Seraphine posts the finalized implementation plan to the sub-issue using premium markdown formatting (collapsible `<details>` blocks, interactive task lists `- [ ]`, Mermaid diagrams, and direct file path links).
 * **Action:**
-  1. Remove the `seraphine-needs-implementation-plan` label from the current `[Implementation Plan]` issue.
-  2. Programmatically create a new **native GitHub sub-issue**:
+  1. Programmatically create a new **native GitHub sub-issue**:
      - **Sub-Issue Title:** `[Breakdown] <Parent Issue Title>`
      - **Sub-Issue Label:** `seraphine-break-down-issue`
      - **Assignee:** `brotherlogic-automation`
      - **Sub-Issue Description:** A link referencing the `[Implementation Plan]` issue and instructing the agent to begin the issue breakdown. Ensure the native GitHub sub-issue relationship is established with the `[Implementation Plan]` issue (not the requirements issue).
+  2. **Remove the Label (Final Step):** Remove the `seraphine-needs-implementation-plan` label from the current `[Implementation Plan]` issue as the **final step** after the breakdown sub-issue has been created.

@@ -38,5 +38,5 @@ For each identified component, Seraphine programmatically files a new **native G
 
 ### 4. Transition & Label Cleanup
 Once all component sub-issues are successfully filed:
-* **Remove the Label:** Remove the `seraphine-break-down-issue` label from the current `[Breakdown]` issue.
+* **Remove the Label (Final Step):** Remove the `seraphine-break-down-issue` label from the current `[Breakdown]` issue as the **final step** after all child sub-issues have been created.
 * **Keep Issue Open:** Do **not** close the `[Breakdown]` issue. Keep it open to serve as the overarching coordination point for the child tasks.

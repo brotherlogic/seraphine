@@ -10,7 +10,7 @@ graph TD
     B --> C[2. Grilling Session /grill-me]
     C --> D[3. Generate PRD & Edge Cases]
     D --> E[4. Post PRD to Parent Issue]
-    E --> F[5. Remove Label & Create Sub-Issue]
+    E --> F[5. Create Sub-Issue & Remove Label]
 ```
 
 ---
@@ -46,12 +46,12 @@ The outcome of the grilling session is compiled into a clear **Product Requireme
 > [!TIP]
 > Ensure edge cases are exhaustive. Think about connection dropouts, empty states, limits on input lengths, and concurrent modifications.
 
-### 4. GitHub Issue Synchronization & Sub-Issue Creation
+### 4. GitHub Issue Synchronization, Sub-Issue Creation & Label Cleanup
 Once the PRD is complete, the agent must execute the following automated steps on GitHub:
 1. **Post the PRD:** Render the requirements document beautifully as a comment on the parent GitHub issue.
-2. **Remove the Label:** Remove the `seraphine-needs-requirements` (or `seraphine-need-requirements`) label from the parent issue to signify completion of the requirements phase.
-3. **Create Sub-Issue:** Programmatically create a **native GitHub sub-issue** to track the subsequent step:
+2. **Create Sub-Issue:** Programmatically create a **native GitHub sub-issue** to track the subsequent step:
    - **Sub-Issue Title:** `[Implementation Plan] <Parent Issue Title>`
    - **Sub-Issue Label:** `seraphine-needs-implementation-plan`
    - **Assignee:** `brotherlogic-automation`
    - **Sub-Issue Description:** A link referencing the parent issue and instructing the agent to begin drafting the implementation plan. Ensure the native GitHub sub-issue relationship is established with the parent issue.
+3. **Remove the Label (Final Step):** Remove the `seraphine-needs-requirements` (or `seraphine-need-requirements`) label from the parent issue as the **final step** after the sub-issue has been created to signify completion of the requirements phase.

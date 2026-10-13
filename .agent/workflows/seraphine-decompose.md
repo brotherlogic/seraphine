@@ -53,7 +53,7 @@ Once the grilling session concludes with a shared understanding:
 
 ### 5. Transition & Label Cleanup
 Once all sub-issues have been created:
-* Remove the `seraphine-decompose` label from the parent issue:
+* **Remove the Label (Final Step):** Remove the `seraphine-decompose` label from the parent issue as the **final step** after all sub-issues have been created:
   ```bash
   gh issue edit <parent-number> --remove-label seraphine-decompose
   ```

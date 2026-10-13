@@ -38,6 +38,7 @@ If the bug is complex or if a simple fix attempt fails verification:
 * **Action:** Do not attempt to implement a fix. Instead, file a follow-up **native GitHub sub-issue** for requirements gathering, labeled with `seraphine-needs-requirements`. Ensure the native GitHub sub-issue relationship is established with the parent bug issue.
 * **Assignee:** Assign the new issue to `brotherlogic-automation`.
 * **Issue Description:** Provide a detailed description of the bug, why it is considered complex (or why the simple fix failed), and link it back to the parent bug issue.
+* **Remove the Label (Final Step):** Remove the `seraphine-bug` label from the parent bug issue as the **final step** after the follow-up sub-issue has been created.
 
 ### 4. Commit, Push & Review
 For successful simple fixes:
